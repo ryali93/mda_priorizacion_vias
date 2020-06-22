@@ -16,12 +16,15 @@ via_nacional = os.path.join(PATH_GDB, "via_nacional")
 via_departamental = os.path.join(PATH_GDB, "via_departamental")
 via_vecinal = os.path.join(PATH_GDB, "via_vecinal")
 
+via_merge = os.path.join(PATH_GDB, "via_merge")
+
 # Areas naturales protegidas
 anp_teu = os.path.join(PATH_GDB, "ANP_TEU")
 tb_anp = os.path.join(PATH_GDB, "tb_anp")
 
 # Recursos turisticos
-tur_features = os.path.join(PATH_GDB, "tur_features")
+fc_turis = os.path.join(PATH_GDB, "tur_features")
+tb_turis = os.path.join(PATH_GDB, "tb_turis")
 
 # Habitantes por centro poblado
 ccpp = os.path.join(PATH_GDB, "ccpp")
