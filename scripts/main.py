@@ -1,4 +1,5 @@
 from settings import *
+import pandas as pd
 
 REGION = REGIONES[22]
 id_region = REGION[0]
@@ -87,6 +88,52 @@ def recursos_turisticos(feature, red_vial_pol, table_out):
                                                 unsplit_lines="DISSOLVE_LINES")
     table_tur = arcpy.TableToTable_conversion(dissol_isc_rectur, table_out, "RV_{}_TUR".format(REGION[0]))
     return table_tur
+
+
+def brechas_sociales(distritos, red_vial_pol, table_out, xlsfile):
+    ubigeo = "codent"
+    brecha = "PUNT_BRECHAS"
+
+    fc_dist = arcpy.CopyFeatures_management(distritos,'in_memory\\fc_dist')
+    mfl_dist = arcpy.MakeFeatureLayer_management(fc_dist,"mfl_dist")
+
+    arcpy.AddField_management(mfl_dist, brecha , "TEXT","", "", 125)
+
+    df_brecha =  pd.read_excel(xlsfile)
+    # df_brecha =  pd.read_excel(xlsfile,'HOJA1')
+
+    # Actualizamos el campo brecha con los valores del xls
+    with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,brecha]) as cursor:
+        for row in cursor:
+            respuesta = df_brecha[df_brecha[ubigeo] = row[0]][brecha]
+            row[1] = respuesta.values.tolist()[0]
+            cursor.updateRow(row)
+
+    intersect_bs = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
+                                            out_feature_class='in_memory\\intersect_bs', 
+                                            join_attributes="ALL", cluster_tolerance="", 
+                                            output_type="INPUT")
+
+    dissol_bs = arcpy.Dissolve_management(in_features=intersect_bs, 
+                                            out_feature_class='in_memory\\dissol_bs', 
+                                            dissolve_field=["ID_RV", "AREA_B5KM", "PUNT_BRECHAS"], 
+                                            statistics_fields=[], multi_part="MULTI_PART", 
+                                            unsplit_lines="DISSOLVE_LINES")
+
+    arcpy.AddField_management(dissol_bs, "AREA_GEO", "DOUBLE")
+    arcpy.AddField_management(dissol_bs, "PNTBRECHAS", "DOUBLE")
+
+    with arcpy.da.UpdateCursor(dissol_bs, ["SHAPE@","AREA_GEO","PNTBRECHAS","AREA_B5KM"]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC","HECTARES")
+            row[1] = area_ha
+            row[2] = area_ha/row[3]
+
+    table_bs = arcpy.TableToTable_conversion(dissol_bs, table_out, "RV_{}_BS".format(REGION[0]))
+    return table_bs
+
+
+
 
 def habitante_ccpp(feature, red_vial_pol, table_out):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
