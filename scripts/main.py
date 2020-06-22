@@ -29,10 +29,23 @@ def get_blayers(rv_feature):
     bfname = 'B5KM_RV_{}'.format(id_dep)
 
     bf = arcpy.Buffer_analysis(in_features=rv_dep, out_feature_class='in_memory\\{}'.format(bfname), 
-        buffer_distance_or_field="5 Kilometers", line_side="FULL", line_end_type="ROUND", dissolve_option="NONE", dissolve_field=[], method="PLANAR")
+        buffer_distance_or_field="5 Kilometers", line_side="FULL", line_end_type="ROUND", 
+        dissolve_option="NONE", dissolve_field=[], method="PLANAR")
     bf_fc = bf.getOutput(0)
 
     bflayer = arcpy.MakeFeatureLayer_management(bf_fc, bfname)
+
+    field_area = "AREA_B5KM"
+
+    arcpy.AddField_management(bflayer, field_area, "DOUBLE")
+
+    # Se calcula el area del buffer 5km para read vial
+    with arcpy.da.UpdateCursor(bflayer, ["@SHAPE", field_area]) as cursor:
+        for row in cursor:
+            # area en hectareas
+            hec_area = row[0].getArea("GEODESIC","HECTARES")
+            row[1] = hec_area
+            cursor.updateRow(row)
 
     return rv_dep, bflayer
 
@@ -48,6 +61,50 @@ def area_natural_protegida(feature, red_vial_line, table_out):
                                            unsplit_lines="DISSOLVE_LINES")
     table_anp = arcpy.TableToTable_conversion(dissol_anp, table_out, "RV_{}_ANP".format(REGION[0]))
     return table_anp
+
+def recursos_turisticos(feature, red_vial_pol, table_out):
+    bfname = "B10KM_RECTURIS"
+    bf = arcpy.Buffer_analysis(in_features=feature, out_feature_class='in_memory\\{}'.format(bfname), 
+        buffer_distance_or_field="10 Kilometers", line_side="FULL", line_end_type="ROUND", 
+        dissolve_option="NONE", dissolve_field=[], method="PLANAR")
+    bf10_fc = bf.getOutput(0)
+
+    dissol_recturis = arcpy.Dissolve_management(in_features=bf10_fc, 
+                                                out_feature_class='in_memory\\dissol_recturis', 
+                                                dissolve_field=[],
+                                                statistics_fields=[], multi_part="MULTI_PART", 
+                                                unsplit_lines="DISSOLVE_LINES")
+    iscname = "B10ISC_RECTURIS"
+    intersect_recturis = arcpy.Intersect_analysis(in_features=[[dissol_recturis, ""], [red_vial_pol, ""]],
+                                                out_feature_class='in_memory\\{}'.format(iscname), 
+                                                join_attributes="ALL", 
+                                                cluster_tolerance="", output_type="INPUT")
+    isc_fc = intersect_recturis.getOutput(0)
+
+    fieldname = "P_RECTURIS"
+    arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
+
+    #Se calcula el porcentaje de area de recturis sobre bf5km
+    with arcpy.da.UpdateCursor(bflayer, ["@SHAPE", field_area, "AREA_B5KM"]) as cursor:
+        for row in cursor:
+            # area en hectareas
+            hec_area = row[0].getArea("GEODESIC","HECTARES")
+            row[1] = hec_area/row[2]
+            cursor.updateRow(row)
+
+    dissol_isc_rectur = arcpy.Dissolve_management(in_features=isc_fc, 
+                                                out_feature_class='in_memory\\dissol_isc_rectur' ,
+                                                dissolve_field=["ID_RV"], 
+                                                statistics_fields=[["P_RECTURIS", "SUM"]], 
+                                                multi_part="MULTI_PART", 
+                                                unsplit_lines="DISSOLVE_LINES")
+
+
+    table_tur = arcpy.TableToTable_conversion(dissol_isc_rectur, table_out, "RV_{}_TUR".format(REGION[0]))
+    return table_tur
+
+
+
 
 def habitante_ccpp(feature, red_vial_pol, table_out):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
