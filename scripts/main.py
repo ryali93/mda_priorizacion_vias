@@ -1,6 +1,9 @@
 import arcpy
 import os
 
+arcpy.env.overwriteOutput = True
+arcpy.env.parallelProcessingFactor = "50%"
+
 BASE_DIR = r''
 PATH_GDB = r''
 REGION = "SAN MARTIN"
@@ -23,19 +26,21 @@ def red_vial():
     arcpy.SelectLayerByAttribute_management(via_nacional, "NEW_SELECTION", sql)
     arcpy.SelectLayerByAttribute_management(via_departamental, "NEW_SELECTION", sql)
     arcpy.SelectLayerByAttribute_management(via_vecinal, "NEW_SELECTION", sql)
+    red_vial_feature = arcpy.Merge_management([via_nacional, via_departamental, via_vecinal], "in_memory\\via_merge")
     return red_vial_feature
 
 def area_natural_protegida(feature, red_vial):
     mfl_ft = arcpy.MakeFeatureLayer_management(feature, "mfl_ft")
     mfl_rv = arcpy.MakeFeatureLayer_management(red_vial, "mfl_rv")
-    intersect_mfl = [mfl_ft, mfl_rv]
-    intersect_out_mfl = "intersect_out_mfl"
-    cluster_tolerance = 1.5
-    arcpy.Intersect_analysis(intersect_mfl, intersect_out_mfl, "", cluster_tolerance, "point")
+    arcpy.Intersect_analysis(in_features=[mfl_ft, mfl_rv],
+                             out_feature_class="intersect_out_mfl")
     arcpy.Dissolve_management(tempLayer, outFeatureClass, dissolveFields, "", "SINGLE_PART", "DISSOLVE_LINES")
 
+    arcpy.TableToTable_conversion(in_rows, out_path, out_name, {where_clause}, {field_mapping})
+
 def process():
-    area_natural_protegida(anp_teu)
+    red_vial_feature = red_vial()
+    area_natural_protegida(anp_teu, red_vial_feature)
 
 def main():
     pass
