@@ -30,8 +30,11 @@ tb_turis = os.path.join(PATH_GDB, "tb_turis")
 ccpp = os.path.join(PATH_GDB, "ccpp")
 tb_ccpp = os.path.join(PATH_GDB, "tb_ccpp")
 
+# Cobertura agricola
+cob_agricola = os.path.join(PATH_GDB, "ngeo_Cob_Agricola_2018")
+
 # Polos de intensificacion productiva en cobertura agricola
-bosque = os.path.join(PATH_GDB, "ccpp")
+bosque = os.path.join(PATH_GDB, "bosque")
 
 
 REGIONES = {1:  ["AMA", "AMAZONAS"],

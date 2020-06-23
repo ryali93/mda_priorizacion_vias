@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from settings import *
 import pandas as pd
 
@@ -105,7 +106,7 @@ def brechas_sociales(distritos, red_vial_pol, table_out, xlsfile):
     # Actualizamos el campo brecha con los valores del xls
     with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,brecha]) as cursor:
         for row in cursor:
-            respuesta = df_brecha[df_brecha[ubigeo] = row[0]][brecha]
+            respuesta = df_brecha[df_brecha[ubigeo] == row[0]][brecha]
             row[1] = respuesta.values.tolist()[0]
             cursor.updateRow(row)
 
@@ -132,9 +133,6 @@ def brechas_sociales(distritos, red_vial_pol, table_out, xlsfile):
     table_bs = arcpy.TableToTable_conversion(dissol_bs, table_out, "RV_{}_BS".format(REGION[0]))
     return table_bs
 
-
-
-
 def habitante_ccpp(feature, red_vial_pol, table_out):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
     arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE", None, None, None, "")
@@ -152,11 +150,31 @@ def habitante_ccpp(feature, red_vial_pol, table_out):
     table_ccpp = arcpy.TableToTable_conversion(dissol_ccpp, table_out, "RV_{}_CCPP".format(REGION[0]))
     return table_ccpp
 
-def polos_intensificacion():
-    Bosque_No_Bosque_2018_Vector_shp = "OneDrive\\SIG\\GEOBOSQUES\\2018\\Bosque_No_Bosque_2018_Vector\\Bosque_No_Bosque_2018_Vector.shp"
-    BNB2018_SM = "Documents\\ArcGIS\\Projects\\Priorizacion de vias\\Priorizacion de vias.gdb\\BNB2018_SM"
-    arcpy.CopyFeatures_management(in_features=Bosque_No_Bosque_2018_Vector_shp, out_feature_class=BNB2018_SM,
-                                  config_keyword="", spatial_grid_1=None, spatial_grid_2=None, spatial_grid_3=None)
+def cobertura_agricola_1(feature, distrito):
+    mfl_distrito = arcpy.MakeFeatureLayer_management(distrito, "mfl_distrito")
+    mfl_cob_agricola = arcpy.MakeFeatureLayer_management(feature, "mfl_cob_agricola")
+    cob_agricola_intersect = arcpy.Intersect_analysis(in_features=[[mfl_distrito, ""], [mfl_cob_agricola, ""]],
+                             out_feature_class="in_memory\\cob_agricola_intersect", join_attributes="ALL", cluster_tolerance="",
+                             output_type="INPUT")
+    cob_agricola_dissol = arcpy.Dissolve_management(in_features=cob_agricola_intersect, out_feature_class="in_memory\\cob_agricola_dissol",
+                              dissolve_field=[], statistics_fields=[], multi_part="MULTI_PART",
+                              unsplit_lines="DISSOLVE_LINES")
+    return cob_agricola_dissol
+
+def cobertura_agricola_2(feature):
+    pass
+
+
+def polos_intensificacion(feature):
+    sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
+    mfl_bosque = arcpy.MakeFeatureLayer_management(bosque, "mfl_bosque", sql)
+    dissol_bosque = arcpy.Dissolve_management(mfl_bosque, "in_memory\\dissol_bosque", [], [], "MULTI_PART", "DISSOLVE_LINES")
+
+    sql_2 = "Cobertura = 'BOSQUE 2018'"
+    mfl_bosque_2 = arcpy.MakeFeatureLayer_management(dissol_bosque, "mfl_bosque_2", sql_2)
+    dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, "in_memory\\dissol_bosque_2", [], [], "MULTI_PART", "DISSOLVE_LINES")
+    # arcpy.Erase_analysis(in_features=dissol_bosque_2, erase_features=BNB2018_SM_BOSQUE_D,
+    #                      out_feature_class=CAGRI_SINBOSQUE, cluster_tolerance="")
 
 def process():
     red_vial_line, red_vial_pol = red_vial(via_merge)
