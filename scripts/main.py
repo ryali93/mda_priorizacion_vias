@@ -108,7 +108,7 @@ def brechas_sociales(distritos, red_vial_pol, xlsfile):
     # Actualizamos el campo brecha con los valores del xls
     with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,brecha]) as cursor:
         for row in cursor:
-            respuesta = df_brecha[df_brecha[ubigeo] = row[0]][brecha]
+            respuesta = df_brecha[df_brecha["UBIGEO"] = row[0]][brecha]
             row[1] = respuesta.values.tolist()[0]
             cursor.updateRow(row)
 
@@ -135,6 +135,24 @@ def brechas_sociales(distritos, red_vial_pol, xlsfile):
     table_bs = arcpy.TableToTable_conversion(dissol_bs, PATH_GDB, "RV_{}_BS".format(REGION[0]))
     return table_bs
 
+def estadistica_agraria(distritos, red_vial_pol, xlsfile):
+
+    mfl_dist = arcpy.MakeFeatureLayer_management(distritos,"mfl_dist")
+
+    ubigeo = "codent"
+    estad_agr = "P_ESTAD"
+
+    arcpy.AddField_management(mfl_dist, estad_agr , "TEXT","", "", 125)
+
+    df_brecha =  pd.read_excel(xlsfile)
+    # df_brecha =  pd.read_excel(xlsfile,'HOJA1')
+
+    # Actualizamos el campo brecha con los valores del xls
+    with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,estad_agr]) as cursor:
+        for row in cursor:
+            respuesta = df_brecha[df_brecha["UBIGEO"] = row[0]][estad_agr]
+            row[1] = respuesta.values.tolist()[0]
+            cursor.updateRow(row)
 
 
 
