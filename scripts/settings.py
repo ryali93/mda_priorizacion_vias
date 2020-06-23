@@ -14,8 +14,7 @@ SCRATCH = arcpy.env.scratchGDB
 # Paths
 
 # Distritos
-Distritos = os.path.join(PATH_GDB, "Distritos")
-Distritos_copy = os.path.join(SCRATCH, "Distritos")
+distritos = os.path.join(PATH_GDB, "Distritos")
 
 # Red vial
 via_nacional = os.path.join(PATH_GDB, "via_nacional")

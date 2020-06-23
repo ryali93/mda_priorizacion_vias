@@ -43,7 +43,8 @@ def red_vial(feature):
     return mfl_rv, mfl_buffer
 
 def copy_distritos(distritos):
-    fc_dist = arcpy.CopyFeatures_management(distritos, Distritos_copy)
+    fc_dist = arcpy.CopyFeatures_management(distritos, os.path.join(SCRATCH, "Distritos"))
+    return fc_dist
 
 
 def area_natural_protegida(feature, red_vial_line):
@@ -180,11 +181,13 @@ def polos_intensificacion(feature):
     #                      out_feature_class=CAGRI_SINBOSQUE, cluster_tolerance="")
 
 def process():
-    copy_distritos(Distritos)
+    fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
+    fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
+
     tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
-    tabla_bs = brechas_sociales(Distritos_copy, red_vial_pol, XLS_BRSOC)
+    tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
     tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
 
