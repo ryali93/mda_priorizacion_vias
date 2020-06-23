@@ -22,19 +22,20 @@ def red_vial(feature):
     # Se crea el identificador unico para red vial
     with arcpy.da.UpdateCursor(mfl_rv, [oidname, fieldname]) as cursor:
         for row in cursor:
-            row[1] = id_dep + "_" + row[0]
+            row[1] = str(id_dep) + "_" + str(row[0])
             cursor.updateRow(row)
+    del cursor
     buffer_name = 'B5KM_RV_{}'.format(id_dep)
     bf = arcpy.Buffer_analysis(in_features=mfl_rv, out_feature_class='in_memory\\{}'.format(buffer_name),
                                buffer_distance_or_field="5 Kilometers", line_side="FULL", line_end_type="ROUND",
                                dissolve_option="NONE", dissolve_field=[], method="PLANAR")
     bf_fc = bf.getOutput(0)
 
-    mfl_buffer = arcpy.MakeFeatureLayer_management(bf_fc, buffer_name)
-    arcpy.AddField_management(mfl_buffer, field_area, "DOUBLE")
+    arcpy.AddField_management(bf_fc, field_area, "DOUBLE")
+    mfl_buffer = arcpy.MakeFeatureLayer_management(bf_fc, "mfl_buffer")
 
     # Se calcula el area del buffer 5km para read vial
-    with arcpy.da.UpdateCursor(mfl_buffer, ["@SHAPE", field_area]) as cursor:
+    with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
         for row in cursor:
             # area en hectareas
             area_ha = row[0].getArea("GEODESIC","HECTARES")
@@ -43,26 +44,34 @@ def red_vial(feature):
     return mfl_rv, mfl_buffer
 
 def copy_distritos(distritos):
-    fc_dist = arcpy.CopyFeatures_management(distritos, os.path.join(SCRATCH, "Distritos"))
+    fc_dist = arcpy.CopyFeatures_management(distritos, os.path.join(SCRATCH, "distritos"))
     return fc_dist
 
-
 def area_natural_protegida(feature, red_vial_line):
+    fieldname1 = "ANPC_NOMB"
+    fieldname2 = "ANPC_NOMB"
     mfl_ft = arcpy.MakeFeatureLayer_management(feature, "mfl_ft")
     mfl_rv = arcpy.MakeFeatureLayer_management(red_vial_line, "mfl_rv")
-    intersect_out_mfl = arcpy.Intersect_analysis([mfl_ft, mfl_rv], "intersect_anp")
+
+    intersect_out_mfl = arcpy.Intersect_analysis([mfl_ft, mfl_rv], "in_memory\\intersect_anp")
+
+    field_names = [f.name for f in arcpy.ListFields(intersect_out_mfl)]
+
     dissol_anp = arcpy.Dissolve_management(in_features=intersect_out_mfl,
                                            out_feature_class="in_memory\\dissol_anp", dissolve_field=["ID_RV"],
-                                           statistics_fields=[["ANPC_NOMB", "MAX"], ["ANPC_CAT", "MAX"]],
+                                           statistics_fields=[[fieldname1, "MAX"], [fieldname2, "MAX"]],
                                            multi_part="MULTI_PART",
                                            unsplit_lines="DISSOLVE_LINES")
+    # ["ANPC_NOMB", "MAX"], ["ANPC_CAT", "MAX"]
 
     table_anp = arcpy.TableToTable_conversion(dissol_anp, PATH_GDB, "RV_{}_ANP".format(REGION[0]))
     return table_anp
 
 def recursos_turisticos(feature, red_vial_pol):
+    sql = "DPTO = 'San Martin'"
     fieldname = "P_RECTURIS"
-    buffer_turis = arcpy.Buffer_analysis(in_features=feature, out_feature_class='in_memory\\buffer_turis',
+    mfl_turis = arcpy.MakeFeatureLayer_management(feature, "mfl_turis", sql)
+    buffer_turis = arcpy.Buffer_analysis(in_features=mfl_turis, out_feature_class='in_memory\\buffer_turis',
                                          buffer_distance_or_field="10 Kilometers", line_side="FULL",
                                          line_end_type="ROUND", dissolve_option="NONE",
                                          dissolve_field=[], method="PLANAR")
@@ -82,17 +91,17 @@ def recursos_turisticos(feature, red_vial_pol):
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
-    with arcpy.da.UpdateCursor(buffer_turis, ["@SHAPE", fieldname, "AREA_B5KM"]) as cursor:
+    with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC","HECTARES")
             row[1] = area_ha/row[2]
             cursor.updateRow(row)
     dissol_isc_rectur = arcpy.Dissolve_management(in_features=isc_fc,
-                                                out_feature_class='in_memory\\dissol_isc_rectur' ,
-                                                dissolve_field=["ID_RV"], 
-                                                statistics_fields=[["P_RECTURIS", "SUM"]], 
-                                                multi_part="MULTI_PART", 
-                                                unsplit_lines="DISSOLVE_LINES")
+                                                  out_feature_class='in_memory\\dissol_isc_rectur' ,
+                                                  dissolve_field=["ID_RV"],
+                                                  statistics_fields=[[fieldname, "SUM"]],
+                                                  multi_part="MULTI_PART",
+                                                  unsplit_lines="DISSOLVE_LINES")
     table_tur = arcpy.TableToTable_conversion(dissol_isc_rectur, PATH_GDB, "RV_{}_TUR".format(REGION[0]))
     return table_tur
 
@@ -351,21 +360,30 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
     return table_zd
 
 def process():
-    fc_distritos = copy_distritos(distritos)
+    # fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
-    fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
-
-    tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
+    # fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
+    #
+    # tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
-    tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
-    tabla_roam = restauracion(fc_roam, red_vial_pol)
-    tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
-    tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
-    tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
-    tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
-    tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
+    print(tabla_turis)
+    # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    # tabla_roam = restauracion(fc_roam, red_vial_pol)
+    # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
+    # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
+    # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
+    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
+    # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
 
 def main():
+    from datetime import datetime
+    start_time = datetime.now()
     process()
+    end_time = datetime.now()
+    print('Duration: {}'.format(end_time - start_time))
+
+
+if __name__ == '__main__':
+    main()

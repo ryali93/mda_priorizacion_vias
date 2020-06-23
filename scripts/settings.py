@@ -1,33 +1,34 @@
-
+# -*- coding: utf-8 -*-
 import arcpy
 import os
 
 arcpy.env.overwriteOutput = True
-arcpy.env.parallelProcessingFactor = "50%"
+arcpy.env.parallelProcessingFactor = "100%"
+arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("WGS 1984 UTM Zone 18S")
 
-BASE_DIR = r''
-PATH_GDB = os.path.join(BASE_DIR, "")
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+PATH_GDB = os.path.join(BASE_DIR, "PRVDA.gdb")
 REGIONES = {"15": ["SM", "SAN MARTIN"]}
 REGION = REGIONES["15"]
 SCRATCH = arcpy.env.scratchGDB
 
 # Paths
 
-# Distritos
-distritos = os.path.join(PATH_GDB, "Distritos")
+# INSUMOS
+distritos = os.path.join(PATH_GDB, "insumos/distritos_peru")
 
 # Red vial
 via_nacional = os.path.join(PATH_GDB, "via_nacional")
 via_departamental = os.path.join(PATH_GDB, "via_departamental")
 via_vecinal = os.path.join(PATH_GDB, "via_vecinal")
 
-via_merge = os.path.join(PATH_GDB, "via_merge")
+via_merge = os.path.join(PATH_GDB, r"Insumos\rv_sanmartin_new")
 
 # Areas naturales protegidas
-anp_teu = os.path.join(PATH_GDB, "ANP_TEU")
+anp_teu = os.path.join(PATH_GDB, u"Ambiental\Áreas_Naturales_Protegidas_Definitivas")
 
 # Recursos turisticos
-fc_turis = os.path.join(PATH_GDB, "tur_features")
+fc_turis = os.path.join(PATH_GDB, u"Economico/atractivos_turisticos")
 
 # Bosques Vulnerables
 bosq_vuln = os.path.join(PATH_GDB, "bosq_vulnerable")
