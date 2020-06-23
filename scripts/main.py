@@ -194,7 +194,6 @@ def cobertura_agricola_2(feature, red_vial_pol):
                              out_feature_class="in_memory\\cob_agricola_intersect2", join_attributes="ALL",
                              cluster_tolerance="",
                              output_type="INPUT")
-
     field = "P_CAGRI"
     arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
     with arcpy.UpdateCursor(cob_agricola_intersect2, ["@SHAPE", "AREA_B5KM", "P_CAGRI"]) as cursor:
@@ -210,16 +209,23 @@ def cobertura_agricola_2(feature, red_vial_pol):
                                                        out_name="CAGRI_{}".format(REGION[0]))
     return table_cob_agricola
 
-def polos_intensificacion(feature):
+def polos_intensificacion(feature, cobertura):
     sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
     mfl_bosque = arcpy.MakeFeatureLayer_management(bosque, "mfl_bosque", sql)
-    dissol_bosque = arcpy.Dissolve_management(mfl_bosque, "in_memory\\dissol_bosque", [], [], "MULTI_PART", "DISSOLVE_LINES")
+    dissol_bosque = arcpy.Dissolve_management(mfl_bosque, "in_memory\\dissol_bosque", [], [],
+                                              "MULTI_PART", "DISSOLVE_LINES")
 
-    sql_2 = "Cobertura = 'BOSQUE 2018'"
+    sql_2 = u"Cobertura = 'BOSQUE 2018'"
     mfl_bosque_2 = arcpy.MakeFeatureLayer_management(dissol_bosque, "mfl_bosque_2", sql_2)
-    dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, "in_memory\\dissol_bosque_2", [], [], "MULTI_PART", "DISSOLVE_LINES")
-    # arcpy.Erase_analysis(in_features=dissol_bosque_2, erase_features=BNB2018_SM_BOSQUE_D,
-    #                      out_feature_class=CAGRI_SINBOSQUE, cluster_tolerance="")
+    dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, "in_memory\\dissol_bosque_2", [], [],
+                                                "MULTI_PART", "DISSOLVE_LINES")
+    cobertura_erase = arcpy.Erase_analysis(cobertura, dissol_bosque_2, "in_memory\\cobertura_erase")
+    arcpy.Merge_management(inputs=[dissol_bosque, cobertura_erase], output="in_memory\\cobertura_merge",
+                           add_source="NO_SOURCE_INFO")
+
+    return dissol_bosque, cobertura_erase
+
+
 
 def process():
     fc_distritos = copy_distritos(distritos)
