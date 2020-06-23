@@ -42,8 +42,11 @@ def red_vial(feature):
             cursor.updateRow(row)
     return mfl_rv, mfl_buffer
 
+def copy_distritos(distritos):
+    fc_dist = arcpy.CopyFeatures_management(distritos, Distritos_copy)
 
-def area_natural_protegida(feature, red_vial_line, table_out):
+
+def area_natural_protegida(feature, red_vial_line):
     mfl_ft = arcpy.MakeFeatureLayer_management(feature, "mfl_ft")
     mfl_rv = arcpy.MakeFeatureLayer_management(red_vial_line, "mfl_rv")
     intersect_out_mfl = arcpy.Intersect_analysis([mfl_ft, mfl_rv], "intersect_anp")
@@ -52,10 +55,10 @@ def area_natural_protegida(feature, red_vial_line, table_out):
                                            statistics_fields=[["ANPC_NOMB", "MAX"], ["ANPC_CAT", "MAX"]],
                                            multi_part="MULTI_PART",
                                            unsplit_lines="DISSOLVE_LINES")
-    table_anp = arcpy.TableToTable_conversion(dissol_anp, table_out, "RV_{}_ANP".format(REGION[0]))
+    table_anp = arcpy.TableToTable_conversion(dissol_anp, PATH_GDB, "RV_{}_ANP".format(REGION[0]))
     return table_anp
 
-def recursos_turisticos(feature, red_vial_pol, table_out):
+def recursos_turisticos(feature, red_vial_pol):
     fieldname = "P_RECTURIS"
     buffer_turis = arcpy.Buffer_analysis(in_features=feature, out_feature_class='in_memory\\buffer_turis',
         buffer_distance_or_field="10 Kilometers", line_side="FULL", line_end_type="ROUND", 
@@ -87,16 +90,16 @@ def recursos_turisticos(feature, red_vial_pol, table_out):
                                                 statistics_fields=[["P_RECTURIS", "SUM"]], 
                                                 multi_part="MULTI_PART", 
                                                 unsplit_lines="DISSOLVE_LINES")
-    table_tur = arcpy.TableToTable_conversion(dissol_isc_rectur, table_out, "RV_{}_TUR".format(REGION[0]))
+    table_tur = arcpy.TableToTable_conversion(dissol_isc_rectur, PATH_GDB, "RV_{}_TUR".format(REGION[0]))
     return table_tur
 
 
-def brechas_sociales(distritos, red_vial_pol, table_out, xlsfile):
+def brechas_sociales(distritos, red_vial_pol, xlsfile):
+
+    mfl_dist = arcpy.MakeFeatureLayer_management(distritos,"mfl_dist")
+
     ubigeo = "codent"
     brecha = "PUNT_BRECHAS"
-
-    fc_dist = arcpy.CopyFeatures_management(distritos,'in_memory\\fc_dist')
-    mfl_dist = arcpy.MakeFeatureLayer_management(fc_dist,"mfl_dist")
 
     arcpy.AddField_management(mfl_dist, brecha , "TEXT","", "", 125)
 
@@ -130,10 +133,10 @@ def brechas_sociales(distritos, red_vial_pol, table_out, xlsfile):
             row[1] = area_ha
             row[2] = area_ha/row[3]
 
-    table_bs = arcpy.TableToTable_conversion(dissol_bs, table_out, "RV_{}_BS".format(REGION[0]))
+    table_bs = arcpy.TableToTable_conversion(dissol_bs, PATH_GDB, "RV_{}_BS".format(REGION[0]))
     return table_bs
 
-def habitante_ccpp(feature, red_vial_pol, table_out):
+def habitante_ccpp(feature, red_vial_pol):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
     arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE", None, None, None, "")
     with arcpy.UpdateCursor(mfl_ccpp, ["POB__2017_","REPREPOBLA"]) as cursor:
@@ -147,7 +150,7 @@ def habitante_ccpp(feature, red_vial_pol, table_out):
                                             out_feature_class="in_memory\\dissol_ccpp",
                                             dissolve_field=["ID_RV"], statistics_fields=[["REPREPOBLA", "SUM"]],
                                             multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
-    table_ccpp = arcpy.TableToTable_conversion(dissol_ccpp, table_out, "RV_{}_CCPP".format(REGION[0]))
+    table_ccpp = arcpy.TableToTable_conversion(dissol_ccpp, PATH_GDB, "RV_{}_CCPP".format(REGION[0]))
     return table_ccpp
 
 def cobertura_agricola_1(feature, distrito):
@@ -177,10 +180,13 @@ def polos_intensificacion(feature):
     #                      out_feature_class=CAGRI_SINBOSQUE, cluster_tolerance="")
 
 def process():
+    copy_distritos(Distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
-    tabla_anp = area_natural_protegida(anp_teu, red_vial_line, tb_anp)
-    tabla_turis = recursos_turisticos(fc_turis, red_vial_pol, tb_turis)
-    tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol, tb_ccpp)
+    tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
+    tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
+    tabla_bs = brechas_sociales(Distritos_copy, red_vial_pol, XLS_BRSOC)
+    tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
+
 
 def main():
     process()
