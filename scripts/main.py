@@ -26,8 +26,8 @@ def red_vial(feature):
             cursor.updateRow(row)
     buffer_name = 'B5KM_RV_{}'.format(id_dep)
     bf = arcpy.Buffer_analysis(in_features=mfl_rv, out_feature_class='in_memory\\{}'.format(buffer_name),
-        buffer_distance_or_field="5 Kilometers", line_side="FULL", line_end_type="ROUND", 
-        dissolve_option="NONE", dissolve_field=[], method="PLANAR")
+                               buffer_distance_or_field="5 Kilometers", line_side="FULL", line_end_type="ROUND",
+                               dissolve_option="NONE", dissolve_field=[], method="PLANAR")
     bf_fc = bf.getOutput(0)
 
     mfl_buffer = arcpy.MakeFeatureLayer_management(bf_fc, buffer_name)
@@ -62,19 +62,20 @@ def area_natural_protegida(feature, red_vial_line):
 def recursos_turisticos(feature, red_vial_pol):
     fieldname = "P_RECTURIS"
     buffer_turis = arcpy.Buffer_analysis(in_features=feature, out_feature_class='in_memory\\buffer_turis',
-        buffer_distance_or_field="10 Kilometers", line_side="FULL", line_end_type="ROUND", 
-        dissolve_option="NONE", dissolve_field=[], method="PLANAR")
+                                         buffer_distance_or_field="10 Kilometers", line_side="FULL",
+                                         line_end_type="ROUND", dissolve_option="NONE",
+                                         dissolve_field=[], method="PLANAR")
     buffer_turis = buffer_turis.getOutput(0)
 
     dissol_turis = arcpy.Dissolve_management(in_features=buffer_turis,
-                                                out_feature_class='in_memory\\dissol_turis',
-                                                dissolve_field=[],
-                                                statistics_fields=[], multi_part="MULTI_PART", 
-                                                unsplit_lines="DISSOLVE_LINES")
+                                             out_feature_class='in_memory\\dissol_turis',
+                                             dissolve_field=[],
+                                             statistics_fields=[], multi_part="MULTI_PART",
+                                             unsplit_lines="DISSOLVE_LINES")
     intersect_turis = arcpy.Intersect_analysis(in_features=[[dissol_turis, ""], [red_vial_pol, ""]],
-                                                out_feature_class='in_memory\\intersect_turis',
-                                                join_attributes="ALL", 
-                                                cluster_tolerance="", output_type="INPUT")
+                                               out_feature_class='in_memory\\intersect_turis',
+                                               join_attributes="ALL",
+                                               cluster_tolerance="", output_type="INPUT")
     isc_fc = intersect_turis.getOutput(0)
 
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
@@ -160,7 +161,7 @@ def estadistica_agraria(distritos, red_vial_pol, xlsfile):
 
 def habitante_ccpp(feature, red_vial_pol):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
-    arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE", None, None, None, "")
+    arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE")
     with arcpy.UpdateCursor(mfl_ccpp, ["POB__2017_","REPREPOBLA"]) as cursor:
         for x in cursor:
             x[1] = x[0] / 813381
@@ -179,16 +180,35 @@ def cobertura_agricola_1(feature, distrito):
     mfl_distrito = arcpy.MakeFeatureLayer_management(distrito, "mfl_distrito")
     mfl_cob_agricola = arcpy.MakeFeatureLayer_management(feature, "mfl_cob_agricola")
     cob_agricola_intersect = arcpy.Intersect_analysis(in_features=[[mfl_distrito, ""], [mfl_cob_agricola, ""]],
-                             out_feature_class="in_memory\\cob_agricola_intersect", join_attributes="ALL", cluster_tolerance="",
-                             output_type="INPUT")
-    cob_agricola_dissol = arcpy.Dissolve_management(in_features=cob_agricola_intersect, out_feature_class="in_memory\\cob_agricola_dissol",
-                              dissolve_field=[], statistics_fields=[], multi_part="MULTI_PART",
-                              unsplit_lines="DISSOLVE_LINES")
+                                                      out_feature_class="in_memory\\cob_agricola_intersect",
+                                                      join_attributes="ALL", cluster_tolerance="",
+                                                      output_type="INPUT")
+    cob_agricola_dissol = arcpy.Dissolve_management(in_features=cob_agricola_intersect,
+                                                    out_feature_class="in_memory\\cob_agricola_dissol",
+                                                    dissolve_field=[], statistics_fields=[], multi_part="MULTI_PART",
+                                                    unsplit_lines="DISSOLVE_LINES")
     return cob_agricola_dissol
 
-def cobertura_agricola_2(feature):
-    pass
+def cobertura_agricola_2(feature, red_vial_pol):
+    cob_agricola_intersect2 = arcpy.Intersect_analysis(in_features=[[feature, ""], [red_vial_pol, ""]],
+                             out_feature_class="in_memory\\cob_agricola_intersect2", join_attributes="ALL",
+                             cluster_tolerance="",
+                             output_type="INPUT")
 
+    field = "P_CAGRI"
+    arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
+    with arcpy.UpdateCursor(cob_agricola_intersect2, ["@SHAPE", "AREA_B5KM", "P_CAGRI"]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC", "HECTARES")
+            row[2] = area_ha / row[1]
+            cursor.updateRow(row)
+    cob_agricola_dissol = arcpy.Dissolve_management(cob_agricola_intersect2, "in_memory\\cob_agricola_dissol",
+                                                    dissolve_field=["ID_RV"],
+                                                    statistics_fields=[[field, "SUM"]], multi_part="MULTI_PART",
+                                                    unsplit_lines="DISSOLVE_LINES")
+    table_cob_agricola = arcpy.TableToTable_conversion(cob_agricola_dissol, PATH_GDB,
+                                                       out_name="CAGRI_{}".format(REGION[0]))
+    return table_cob_agricola
 
 def polos_intensificacion(feature):
     sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
@@ -206,10 +226,12 @@ def process():
     red_vial_line, red_vial_pol = red_vial(via_merge)
     fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
 
+
     tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
     tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
     tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
+    tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
     tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
 
