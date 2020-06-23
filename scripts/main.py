@@ -248,6 +248,25 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
                                                        out_name="tb_polos_{}".format(REGION[0]))
     return dissol_bosque, cobertura_erase, table_cob_agricola
 
+def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol):
+    erase_zd = arcpy.Erase_analysis(bosque_nobosque, cob_agri_sinbosque, "in_memory\\bnb_sin_cob_agri")
+    intersect_zd = arcpy.Intersect_analysis([[erase_zd, ""], [red_vial_pol, ""]], "in_memory\\zd_intersect")
+    dissol_zd = arcpy.Dissolve_management(intersect_zd, "in_memory\\zd_dissol",["ID_RV", "AREA_B5KM"],
+                                          statistics_fields=[], multi_part="MULTI_PART",
+                                          unsplit_lines="DISSOLVE_LINES")
+
+    arcpy.AddField_management(dissol_zd, "AREA_GEO", "DOUBLE")
+    arcpy.AddField_management(dissol_zd, "PNTBRECHAS", "DOUBLE")
+
+    with arcpy.da.UpdateCursor(dissol_zd, ["SHAPE@", "AREA_GEO", "PNTBRECHAS", "AREA_B5KM"]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC", "HECTARES")
+            row[1] = area_ha
+            row[2] = area_ha / row[3]
+
+    table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "tb_{}_zd".format(REGION[0]))
+    return table_zd
+
 def process():
     fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
@@ -258,7 +277,8 @@ def process():
     tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
     tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
     tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
     tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
 
