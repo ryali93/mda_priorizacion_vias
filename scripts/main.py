@@ -56,6 +56,7 @@ def area_natural_protegida(feature, red_vial_line):
                                            statistics_fields=[["ANPC_NOMB", "MAX"], ["ANPC_CAT", "MAX"]],
                                            multi_part="MULTI_PART",
                                            unsplit_lines="DISSOLVE_LINES")
+
     table_anp = arcpy.TableToTable_conversion(dissol_anp, PATH_GDB, "RV_{}_ANP".format(REGION[0]))
     return table_anp
 
@@ -243,6 +244,7 @@ def estadistica_agraria(distritos, red_vial_pol, xlsfile):
 def habitante_ccpp(feature, red_vial_pol):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
     arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE")
+    
     with arcpy.UpdateCursor(mfl_ccpp, ["POB__2017_","REPREPOBLA"]) as cursor:
         for x in cursor:
             x[1] = x[0] / 813381
