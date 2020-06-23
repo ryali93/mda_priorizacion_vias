@@ -94,6 +94,63 @@ def recursos_turisticos(feature, red_vial_pol):
     table_tur = arcpy.TableToTable_conversion(dissol_isc_rectur, PATH_GDB, "RV_{}_TUR".format(REGION[0]))
     return table_tur
 
+def bosque_vulnerable(feature, red_vial_pol):
+    sql = "Riesgo in ('Muy Alto','Alto','Mediano')"
+    mfl_bv = arcpy.MakeFeatureLayer_management(feature,"mfl_bv",sql)
+
+    intersect_bv = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_bv, ""]], 
+                                                out_feature_class='in_memory\\intersect_bv', 
+                                                join_attributes="ALL", 
+                                                cluster_tolerance="", output_type="INPUT")
+    dissol_isc_bv = arcpy.Dissolve_management(in_features=intersect_bv, 
+                                                out_feature_class='in_memory\\dissol_isc_bv', 
+                                                dissolve_field=["ID_RV", "AREA_B5KM"], 
+                                                statistics_fields=[], 
+                                                multi_part="MULTI_PART", 
+                                                unsplit_lines="DISSOLVE_LINES")
+
+    arcpy.AddField_management(dissol_isc_bv, "AREA_GEO", "DOUBLE")
+    arcpy.AddField_management(dissol_isc_bv, "PNTBV", "DOUBLE")
+
+    with arcpy.da.UpdateCursor(dissol_isc_bv, ["SHAPE@","AREA_GEO","PNTBV","AREA_B5KM"]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC","HECTARES")
+            row[1] = area_ha
+            row[2] = area_ha/row[3]
+            cursor.updateRow(row)
+
+    table_bv = arcpy.TableToTable_conversion(dissol_isc_bv, PATH_GDB, "RV_{}_BV".format(REGION[0]))
+    return table_bv
+
+def restauracion(feature, red_vial_pol):
+    mfl_roam = arcpy.MakeFeatureLayer_management(feature,"mfl_roam")
+
+    intersect_roam = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_roam, ""]], 
+                                                out_feature_class='in_memory\\intersect_roam', 
+                                                join_attributes="ALL", 
+                                                cluster_tolerance="", output_type="INPUT")
+    dissol_isc_roam = arcpy.Dissolve_management(in_features=intersect_roam, 
+                                                out_feature_class='in_memory\\dissol_isc_roam', 
+                                                dissolve_field=["ID_RV", "AREA_B5KM"], 
+                                                statistics_fields=[], 
+                                                multi_part="MULTI_PART", 
+                                                unsplit_lines="DISSOLVE_LINES")
+
+    arcpy.AddField_management(dissol_isc_roam, "AREA_GEO", "DOUBLE")
+    arcpy.AddField_management(dissol_isc_roam, "PNTROAM", "DOUBLE")
+
+    with arcpy.da.UpdateCursor(dissol_isc_roam, ["SHAPE@","AREA_GEO","PNTROAM","AREA_B5KM"]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC","HECTARES")
+            row[1] = area_ha
+            row[2] = area_ha/row[3]
+            cursor.updateRow(row)
+
+    table_roam = arcpy.TableToTable_conversion(dissol_isc_roam, PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
+    return table_roam
+    
+
+
 
 def brechas_sociales(distritos, red_vial_pol, xlsfile):
 
@@ -134,6 +191,7 @@ def brechas_sociales(distritos, red_vial_pol, xlsfile):
             area_ha = row[0].getArea("GEODESIC","HECTARES")
             row[1] = area_ha
             row[2] = area_ha/row[3]
+            cursor.updateRow(row)
 
     table_bs = arcpy.TableToTable_conversion(dissol_bs, PATH_GDB, "RV_{}_BS".format(REGION[0]))
     return table_bs
@@ -147,15 +205,38 @@ def estadistica_agraria(distritos, red_vial_pol, xlsfile):
 
     arcpy.AddField_management(mfl_dist, estad_agr , "TEXT","", "", 125)
 
-    df_brecha =  pd.read_excel(xlsfile)
-    # df_brecha =  pd.read_excel(xlsfile,'HOJA1')
+    df_estad_agr =  pd.read_excel(xlsfile)
+    # df_estad_agr =  pd.read_excel(xlsfile,'HOJA1')
 
     # Actualizamos el campo brecha con los valores del xls
     with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,estad_agr]) as cursor:
         for row in cursor:
-            respuesta = df_brecha[df_brecha["UBIGEO"] == row[0]][estad_agr]
+            respuesta = df_estad_agr[df_estad_agr["UBIGEO"] == row[0]][estad_agr]
             row[1] = respuesta.values.tolist()[0]
             cursor.updateRow(row)
+
+    intersect_ea = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]], 
+                                            out_feature_class='in_memory\\intersect_ea', 
+                                            join_attributes="ALL", 
+                                            cluster_tolerance="", output_type="INPUT")
+    dissol_ea = arcpy.Dissolve_management(in_features=intersect_ea, 
+                                            out_feature_class='in_memory\\dissol_ea', 
+                                            dissolve_field=["ID_RV", "AREA_B5KM", "P_ESTAD"], 
+                                            statistics_fields=[], multi_part="MULTI_PART", 
+                                            unsplit_lines="DISSOLVE_LINES")
+
+    arcpy.AddField_management(dissol_ea, "AREA_GEO", "DOUBLE")
+    arcpy.AddField_management(dissol_ea, "PNTESTAGRI", "DOUBLE")
+
+    with arcpy.da.UpdateCursor(dissol_ea, ["SHAPE@","AREA_GEO","PNTESTAGRI","AREA_B5KM"]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC","HECTARES")
+            row[1] = area_ha
+            row[2] = area_ha/row[3]
+            cursor.updateRow(row)
+
+    table_ea = arcpy.TableToTable_conversion(dissol_ea, PATH_GDB, "RV_{}_EA".format(REGION[0]))
+    return table_ea
 
 
 def habitante_ccpp(feature, red_vial_pol):
@@ -165,10 +246,10 @@ def habitante_ccpp(feature, red_vial_pol):
         for x in cursor:
             x[1] = x[0] / 813381
             cursor.updateRow(x)
-    intersect_out_mfl = arcpy.Intersect_analysis(in_features=[[mfl_ccpp, ""], [red_vial_pol, ""]],
+    intersect_ccpp = arcpy.Intersect_analysis(in_features=[[mfl_ccpp, ""], [red_vial_pol, ""]],
                                                  out_feature_class="in_memory\\intersect_ccpp",
                                                  join_attributes="ALL")
-    dissol_ccpp = arcpy.Dissolve_management(in_features=intersect_out_mfl,
+    dissol_ccpp = arcpy.Dissolve_management(in_features=intersect_ccpp,
                                             out_feature_class="in_memory\\dissol_ccpp",
                                             dissolve_field=["ID_RV"], statistics_fields=[["REPREPOBLA", "SUM"]],
                                             multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
@@ -208,6 +289,8 @@ def process():
 
     tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
+    tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    tabla_roam = restauracion(fc_roam, red_vial_pol)
     tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
     tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
     tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)

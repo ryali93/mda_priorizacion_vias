@@ -29,6 +29,11 @@ anp_teu = os.path.join(PATH_GDB, "ANP_TEU")
 # Recursos turisticos
 fc_turis = os.path.join(PATH_GDB, "tur_features")
 
+# Bosques Vulnerables
+bosq_vuln = os.path.join(PATH_GDB, "bosq_vulnerable")
+# Restauracion ROAM
+fc_roam = os.path.join(PATH_GDB, "roam_features")
+
 # Brechas sociales
 XLS_BRSOC = "ruta excel brechas sociales"
 
