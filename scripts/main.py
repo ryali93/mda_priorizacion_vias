@@ -91,7 +91,7 @@ def recursos_turisticos(feature, red_vial_pol):
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
-    with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", fieldname, "AREA_B5KM"]) as cursor:
+    with arcpy.da.UpdateCursor(buffer_turis, ["SHAPE@", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC","HECTARES")
             row[1] = area_ha/row[2]
@@ -253,7 +253,7 @@ def estadistica_agraria(distritos, red_vial_pol, xlsfile):
 def habitante_ccpp(feature, red_vial_pol):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
     arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE")
-    
+
     with arcpy.UpdateCursor(mfl_ccpp, ["POB__2017_","REPREPOBLA"]) as cursor:
         for x in cursor:
             x[1] = x[0] / 813381
@@ -288,7 +288,7 @@ def cobertura_agricola_2(feature, red_vial_pol):
                              output_type="INPUT")
     field = "P_CAGRI"
     arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
-    with arcpy.UpdateCursor(cob_agricola_intersect2, ["@SHAPE", "AREA_B5KM", "P_CAGRI"]) as cursor:
+    with arcpy.UpdateCursor(cob_agricola_intersect2, ["SHAPE@", "AREA_B5KM", "P_CAGRI"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[2] = area_ha / row[1]
@@ -327,7 +327,7 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     arcpy.AddField_management(polos_mfl, "PNTPOLOS", "DOUBLE")
 
     field = "PNTPOLOS"
-    with arcpy.UpdateCursor(polos_mfl, ["@SHAPE", "AREA_B5KM", field]) as cursor:
+    with arcpy.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[2] = area_ha / row[1]
