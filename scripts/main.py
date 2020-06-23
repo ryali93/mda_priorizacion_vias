@@ -206,12 +206,12 @@ def cobertura_agricola_2(feature, red_vial_pol):
                                                     statistics_fields=[[field, "SUM"]], multi_part="MULTI_PART",
                                                     unsplit_lines="DISSOLVE_LINES")
     table_cob_agricola = arcpy.TableToTable_conversion(cob_agricola_dissol, PATH_GDB,
-                                                       out_name="CAGRI_{}".format(REGION[0]))
+                                                       out_name="tb_cagri_{}".format(REGION[0]))
     return table_cob_agricola
 
-def polos_intensificacion(feature, cobertura):
+def polos_intensificacion(feature, cobertura, red_vial_pol):
     sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
-    mfl_bosque = arcpy.MakeFeatureLayer_management(bosque, "mfl_bosque", sql)
+    mfl_bosque = arcpy.MakeFeatureLayer_management(feature, "mfl_bosque", sql)
     dissol_bosque = arcpy.Dissolve_management(mfl_bosque, "in_memory\\dissol_bosque", [], [],
                                               "MULTI_PART", "DISSOLVE_LINES")
 
@@ -220,24 +220,45 @@ def polos_intensificacion(feature, cobertura):
     dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, "in_memory\\dissol_bosque_2", [], [],
                                                 "MULTI_PART", "DISSOLVE_LINES")
     cobertura_erase = arcpy.Erase_analysis(cobertura, dissol_bosque_2, "in_memory\\cobertura_erase")
-    arcpy.Merge_management(inputs=[dissol_bosque, cobertura_erase], output="in_memory\\cobertura_merge",
-                           add_source="NO_SOURCE_INFO")
 
-    return dissol_bosque, cobertura_erase
+    cobertura_union = arcpy.Union_analysis(in_features=[[dissol_bosque, ""], [cobertura_erase, ""]],
+                                           out_feature_class="in_memory\\cobertura_union",
+                                           join_attributes="ALL", cluster_tolerance="", gaps="GAPS")
 
+    cobertura_dissol = arcpy.Dissolve_management(in_features=cobertura_union, out_feature_class="cobertura_dissol",
+                                                 multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
 
+    polos_intersect = arcpy.Intersect_analysis(in_features=[[cobertura_dissol, ""], [pot_product, ""], [red_vial_pol, ""]],
+                                               out_feature_class="in_memory\\polos_intersect")
+    sql_3 = "PP = 'AP-AC-FL' Or PP = 'AP-AC' Or PP = 'AP-AC'"
+    polos_mfl = arcpy.MakeFeatureLayer_management(polos_intersect, "polos_mfl", sql_3)
+    arcpy.AddField_management(polos_mfl, "PNTPOLOS", "DOUBLE")
+
+    field = "PNTPOLOS"
+    with arcpy.UpdateCursor(polos_mfl, ["@SHAPE", "AREA_B5KM", field]) as cursor:
+        for row in cursor:
+            area_ha = row[0].getArea("GEODESIC", "HECTARES")
+            row[2] = area_ha / row[1]
+            cursor.updateRow(row)
+
+    cobertura_dissol_f = arcpy.Dissolve_management(polos_mfl, "in_memory\\cobertura_dissol_f",
+                                                   dissolve_field=["ID_RV"], statistics_fields=[[field, "SUM"]],
+                                                   multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
+    table_cob_agricola = arcpy.TableToTable_conversion(cobertura_dissol_f, PATH_GDB,
+                                                       out_name="tb_polos_{}".format(REGION[0]))
+    return dissol_bosque, cobertura_erase, table_cob_agricola
 
 def process():
     fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
     fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
 
-
     tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
     tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
     tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
     tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
+    tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
     tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
 

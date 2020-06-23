@@ -43,6 +43,7 @@ cob_agricola = os.path.join(PATH_GDB, "ngeo_Cob_Agricola_2018")
 
 # Polos de intensificacion productiva en cobertura agricola
 bosque = os.path.join(PATH_GDB, "bosque")
+pot_product = os.path.join(PATH_GDB, "potencial_productivo")
 
 
 REGIONES = {1:  ["AMA", "AMAZONAS"],
