@@ -14,8 +14,7 @@ SCRATCH = arcpy.env.scratchGDB
 # Paths
 
 # Distritos
-Distritos = os.path.join(PATH_GDB, "Distritos")
-Distritos_copy = os.path.join(SCRATCH, "Distritos")
+distritos = os.path.join(PATH_GDB, "Distritos")
 
 # Red vial
 via_nacional = os.path.join(PATH_GDB, "via_nacional")
@@ -33,11 +32,17 @@ fc_turis = os.path.join(PATH_GDB, "tur_features")
 # Brechas sociales
 XLS_BRSOC = "ruta excel brechas sociales"
 
+# Estadistica agraria
+XLS_ESTAGR = "ruta excel Estadistica agraria"
+
 # Habitantes por centro poblado
 ccpp = os.path.join(PATH_GDB, "ccpp")
 
+# Cobertura agricola
+cob_agricola = os.path.join(PATH_GDB, "ngeo_Cob_Agricola_2018")
+
 # Polos de intensificacion productiva en cobertura agricola
-bosque = os.path.join(PATH_GDB, "ccpp")
+bosque = os.path.join(PATH_GDB, "bosque")
 
 
 REGIONES = {1:  ["AMA", "AMAZONAS"],

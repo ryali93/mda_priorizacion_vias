@@ -31,6 +31,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="ServiceViewManager">
     <option name="viewStates">
@@ -72,10 +73,14 @@
     </option>
   </component>
   <component name="WindowStateProjectService">
-    <state x="656" y="345" key="com.intellij.ide.util.TipDialog" timestamp="1592856355642">
+    <state x="461" y="163" key="SettingsEditor" timestamp="1592868929629">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="656" y="345" key="com.intellij.ide.util.TipDialog/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1592856355642" />
+    <state x="461" y="163" key="SettingsEditor/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1592868929629" />
+    <state x="656" y="345" key="com.intellij.ide.util.TipDialog" timestamp="1592868727169">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="656" y="345" key="com.intellij.ide.util.TipDialog/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1592868727169" />
     <state x="601" y="246" width="700" height="530" key="recent.locations.popup" timestamp="1592839154550">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -88,6 +93,11 @@
           <url>file://$PROJECT_DIR$/received/Priorizacion de Vias.py</url>
           <line>463</line>
           <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>144</line>
+          <option name="timeStamp" value="7" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

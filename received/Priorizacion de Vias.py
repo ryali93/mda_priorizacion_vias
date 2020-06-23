@@ -172,7 +172,7 @@ def PVias():  # Priorizacion de Vias
     BNB2018_SM_NB = "C:\\Users\\Jerzy Virhuez\\Documents\\ArcGIS\\Projects\\Priorizacion de vias\\Priorizacion de vias.gdb\\BNB2018_SM_NB"
     arcpy.Select_analysis(in_features=BNB2018_SM, out_feature_class=BNB2018_SM_NB, where_clause="Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'")
 
-    # Process: Disolver (7) (Disolver) 
+    # Process: Disolver (7) (Disolver)
     BNB2018_SM_NB_D = "C:\\Users\\Jerzy Virhuez\\Documents\\ArcGIS\\Projects\\Priorizacion de vias\\Priorizacion de vias.gdb\\BNB2018_SM_NB_D"
     arcpy.Dissolve_management(in_features=BNB2018_SM_NB, out_feature_class=BNB2018_SM_NB_D, dissolve_field=[], statistics_fields=[], multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
 
