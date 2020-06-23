@@ -9,8 +9,14 @@ BASE_DIR = r''
 PATH_GDB = os.path.join(BASE_DIR, "")
 REGIONES = {"15": ["SM", "SAN MARTIN"]}
 REGION = REGIONES["15"]
+SCRATCH = arcpy.env.scratchGDB
 
 # Paths
+
+# Distritos
+Distritos = os.path.join(PATH_GDB, "Distritos")
+Distritos_copy = os.path.join(SCRATCH, "Distritos")
+
 # Red vial
 via_nacional = os.path.join(PATH_GDB, "via_nacional")
 via_departamental = os.path.join(PATH_GDB, "via_departamental")
@@ -20,15 +26,15 @@ via_merge = os.path.join(PATH_GDB, "via_merge")
 
 # Areas naturales protegidas
 anp_teu = os.path.join(PATH_GDB, "ANP_TEU")
-tb_anp = os.path.join(PATH_GDB, "tb_anp")
 
 # Recursos turisticos
 fc_turis = os.path.join(PATH_GDB, "tur_features")
-tb_turis = os.path.join(PATH_GDB, "tb_turis")
+
+# Brechas sociales
+XLS_BRSOC = "ruta excel brechas sociales"
 
 # Habitantes por centro poblado
 ccpp = os.path.join(PATH_GDB, "ccpp")
-tb_ccpp = os.path.join(PATH_GDB, "tb_ccpp")
 
 # Polos de intensificacion productiva en cobertura agricola
 bosque = os.path.join(PATH_GDB, "ccpp")
