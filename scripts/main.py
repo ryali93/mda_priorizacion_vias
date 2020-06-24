@@ -107,6 +107,8 @@ def recursos_turisticos(feature, red_vial_pol):
 
 def bosque_vulnerable(feature, red_vial_pol):
     sql = "Riesgo in ('Muy Alto','Alto','Mediano')"
+    #EN LAS CAPAS APARECE EN MAYUSCULAS
+    sql = "Riesgo in ('MUY ALTO', 'ALTO', 'MEDIO')"
     mfl_bv = arcpy.MakeFeatureLayer_management(feature,"mfl_bv",sql)
 
     intersect_bv = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_bv, ""]], 
@@ -361,9 +363,9 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
                                           unsplit_lines="DISSOLVE_LINES")
 
     arcpy.AddField_management(dissol_zd, "AREA_GEO", "DOUBLE")
-    arcpy.AddField_management(dissol_zd, "PNTBRECHAS", "DOUBLE")
+    arcpy.AddField_management(dissol_zd, "PNT_ZDEGRA_SINCAGRO", "DOUBLE")
 
-    with arcpy.da.UpdateCursor(dissol_zd, ["SHAPE@", "AREA_GEO", "PNTBRECHAS", "AREA_B5KM"]) as cursor:
+    with arcpy.da.UpdateCursor(dissol_zd, ["SHAPE@", "AREA_GEO", "PNT_ZDEGRA_SINCAGRO", "AREA_B5KM"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[1] = area_ha
@@ -371,6 +373,96 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
 
     table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "tb_{}_zd".format(REGION[0]))
     return table_zd
+
+
+def dictb(f_in, tb, *args):
+
+    for field in args:
+        arcpy.AddField_management(f_in, field, "DOUBLE")
+
+    fields = []
+    idrv = "ID_RV"
+    fields.append(idrv)
+    fields.extend(list(args))
+
+    sql = "{} IS NOT NULL".format(idrv)
+    cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb,fields,sql)}
+    return cursor
+
+def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,tb8_brs,tb9_bvu, tb10_cpp):
+
+    idrv = "ID_RV"
+    # Se crean campos y cursor para las tablas
+    # Areas naturales anp
+    fanp1 = "MAX_ANPC_NOMB"
+    fanp2 = "MAX_ANPC_CAT"
+    c_anp = dictb(feature,tb1_anp, fanp1, fanp2)
+
+    # Recursos turisticos turis
+    ftur = "SUM_P_RECTURIS"
+    c_tur = dictb(feature,tb2_tur, ftur)
+
+    # Zona degradad
+    fzdg = "PNT_ZDEGRA_SINCAGRO"
+    c_zdg = dictb(feature, tb3_zdg, fzdg)
+
+    # Restauracion ROAM
+    fres = "PNTROAM"
+    c_res = dictb(feature, tb4_res, fres)
+
+    # Cobertura agricola
+    fcagr = "SUM_P_CAGRI"
+    c_cagr = dictb(feature, tb5_cagr, fcagr)
+
+    # Polos
+    fpol = "SUM_PNTPOLOS"
+    c_pol = dictb(feature, tb6_pol, fpol)
+
+    # Estadistica Agraria
+    feag = "PNTESTAGRI"
+    c_eag = dictb(feature, tb7_eag, feag)
+
+    # Brechas Sociales
+    fbrs = "PNTBRECHAS"
+    c_brs = dictb(feature, tb8_brs, fbrs)
+
+    # Bosques vulnerables
+    fbvu = "PNTBV"
+    c_bvu = dictb(feature, tb9_bvu, fbvu)
+
+    # Habitantes por centro poblado
+    fcpp = "SUM_REPREPOBLA"
+    c_cpp = dictb(feature, tb10_cpp, fcpp)
+
+
+    upd_fields = [idrv, fanp1, fanp2, ftur, fzdg, fres, fcagr, fpol, feag, fbrs, fbvu, fcpp]
+
+    sql = "{} IS NOT NULL".format(idrv)
+
+    with arcpy.da.UpdateCursor(feature, upd_fields, sql) as cursor:
+
+        for row in cursor:
+            row[1] = c_anp.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[2] = c_anp.get(row[0])[1] if c_anp.get(row[0]) else 0
+            row[3] = c_tur.get(row[0])[1] if c_anp.get(row[0]) else 0
+            row[4] = c_zdg.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[5] = c_res.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[6] = c_cagr.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[7] = c_pol.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[8] = c_eag.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[9] = c_brs.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[10] = c_bvu.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[11] = c_cpp.get(row[0])[0] if c_anp.get(row[0]) else 0
+            cursor.updateRow(row)
+
+
+    f_len  ="LENGTH_GEO" #DOUBLE
+    f_eval = "EVALUACION" #DOUBLE
+    f_evacl = "EVACLASE" #TEXTO, 10
+    f_amb = "AMBIENTAL" #DOUBLE
+    
+
+
 
 def process():
     fc_distritos = copy_distritos(distritos)
