@@ -10,6 +10,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 PATH_GDB = os.path.join(BASE_DIR, "PRVDA.gdb")
 REGIONES = {"15": ["SM", "SAN MARTIN"]}
 REGION = REGIONES["15"]
+pob_sm  = 813381
 SCRATCH = arcpy.env.scratchGDB
 
 # Paths
@@ -42,10 +43,10 @@ tbp_brechas = os.path.join(PATH_GDB,r'puntaje_brechas_sociales')
 tbp_estagr = os.path.join(PATH_GDB,r'puntaje_estadistica_agraria_2018')
 
 # Habitantes por centro poblado
-ccpp = os.path.join(PATH_GDB, "ccpp")
+ccpp = os.path.join(PATH_GDB, r"Social\ccpp_peru_2017")
 
 # Cobertura agricola
-cob_agricola = os.path.join(PATH_GDB, "ngeo_Cob_Agricola_2018")
+cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018_r22")
 
 # Polos de intensificacion productiva en cobertura agricola
 bosque = os.path.join(PATH_GDB, "bosque")
