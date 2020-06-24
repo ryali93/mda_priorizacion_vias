@@ -565,8 +565,6 @@ def process():
     # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
     # print(tabla_turis)
     tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
-    print(tabla_bv)
-    
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
     # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
     # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
