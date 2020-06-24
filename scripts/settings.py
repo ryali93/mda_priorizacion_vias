@@ -46,11 +46,11 @@ tbp_estagr = os.path.join(PATH_GDB,r'puntaje_estadistica_agraria_2018')
 ccpp = os.path.join(PATH_GDB, r"Social\ccpp_peru_2017")
 
 # Cobertura agricola
-cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018_r22")
+cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018")
 
 # Polos de intensificacion productiva en cobertura agricola
-bosque = os.path.join(PATH_GDB, "bosque")
-pot_product = os.path.join(PATH_GDB, "potencial_productivo")
+bosque = os.path.join(PATH_GDB, r"Ambiental\bnb2018_peru")
+pot_product = os.path.join(PATH_GDB, r"Economico\polos_sanmartin")
 
 
 REGIONES = {1:  ["AMA", "AMAZONAS"],

@@ -274,7 +274,7 @@ def habitante_ccpp(feature, red_vial_pol):
 
 def cobertura_agricola_1(feature, distrito):
     sql = "IDDPTO = '{}'".format(id_region)
-    mfl_distrito = arcpy.MakeFeatureLayer_management(distrito, "mfl_distrito")
+    mfl_distrito = arcpy.MakeFeatureLayer_management(distrito, "mfl_distrito", sql)
     mfl_cob_agricola = arcpy.MakeFeatureLayer_management(feature, "mfl_cob_agricola")
     cob_agricola_intersect = arcpy.Intersect_analysis(in_features=[[mfl_distrito, ""], [mfl_cob_agricola, ""]],
                                                       out_feature_class= os.path.join(SCRATCH, "cob_agricola_intersect"),
@@ -310,24 +310,30 @@ def cobertura_agricola_2(feature, red_vial_pol):
 def polos_intensificacion(feature, cobertura, red_vial_pol):
     sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
     mfl_bosque = arcpy.MakeFeatureLayer_management(feature, "mfl_bosque", sql)
-    dissol_bosque = arcpy.Dissolve_management(mfl_bosque, "in_memory\\dissol_bosque", [], [],
+    dissol_bosque = arcpy.Dissolve_management(mfl_bosque, os.path.join(SCRATCH,"dissol_bosque"), [], [],
                                               "MULTI_PART", "DISSOLVE_LINES")
+    print("dissol_bosque")
 
     sql_2 = u"Cobertura = 'BOSQUE 2018'"
-    mfl_bosque_2 = arcpy.MakeFeatureLayer_management(dissol_bosque, "mfl_bosque_2", sql_2)
-    dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, "in_memory\\dissol_bosque_2", [], [],
+    mfl_bosque_2 = arcpy.MakeFeatureLayer_management(feature, "mfl_bosque_2", sql_2)
+    dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, os.path.join(SCRATCH,"dissol_bosque_2"), [], [],
                                                 "MULTI_PART", "DISSOLVE_LINES")
-    cobertura_erase = arcpy.Erase_analysis(cobertura, dissol_bosque_2, "in_memory\\cobertura_erase")
+    print("dissol_bosque_2")
+    cobertura_erase = arcpy.Erase_analysis(cobertura, dissol_bosque_2, os.path.join(SCRATCH, "cobertura_erase"))
+    print("cobertura_erase")
 
     cobertura_union = arcpy.Union_analysis(in_features=[[dissol_bosque, ""], [cobertura_erase, ""]],
-                                           out_feature_class="in_memory\\cobertura_union",
+                                           out_feature_class=os.path.join(SCRATCH,"cobertura_union"),
                                            join_attributes="ALL", cluster_tolerance="", gaps="GAPS")
+    print("cobertura_union")
 
-    cobertura_dissol = arcpy.Dissolve_management(in_features=cobertura_union, out_feature_class="cobertura_dissol",
+    cobertura_dissol = arcpy.Dissolve_management(in_features=cobertura_union, out_feature_class=os.path.join(SCRATCH,"cobertura_dissol"),
                                                  multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
+    print("cobertura_dissol")
 
     polos_intersect = arcpy.Intersect_analysis(in_features=[[cobertura_dissol, ""], [pot_product, ""], [red_vial_pol, ""]],
-                                               out_feature_class="in_memory\\polos_intersect")
+                                               out_feature_class=os.path.join(SCRATCH,"polos_intersect"))
+    print("polos_intersect")
     sql_3 = "PP = 'AP-AC-FL' Or PP = 'AP-AC' Or PP = 'AP-AC'"
     polos_mfl = arcpy.MakeFeatureLayer_management(polos_intersect, "polos_mfl", sql_3)
     arcpy.AddField_management(polos_mfl, "PNTPOLOS", "DOUBLE")
@@ -342,6 +348,7 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     cobertura_dissol_f = arcpy.Dissolve_management(polos_mfl, "in_memory\\cobertura_dissol_f",
                                                    dissolve_field=["ID_RV"], statistics_fields=[[field, "SUM"]],
                                                    multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
+    print("cobertura_dissol_f")
     table_cob_agricola = arcpy.TableToTable_conversion(cobertura_dissol_f, PATH_GDB,
                                                        out_name="tb_polos_{}".format(REGION[0]))
     return dissol_bosque, cobertura_erase, table_cob_agricola
@@ -379,9 +386,8 @@ def process():
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
     # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
     # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
-    tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    print(tabla_cob_agric)
-    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
+    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
     # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
     # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
