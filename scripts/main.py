@@ -376,6 +376,15 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
 
 
 def dictb(f_in, tb, *args):
+    """
+    descripcion : funcion que agrega un campo a la capa de ingreso del tipo double
+                y crea un diccionario para la tabla indicada "tb" con los campos "args"
+    f_in : capa a la que se le agregaran los campos de args
+    tb   : tabla ingresada para generar el diccionario
+    args : nombres de campos a crear en f_in, los mismo que se usan para construir el diccionario
+
+    output: cursor--> dicionario con key :"ID_RV" y values : args
+    """
 
     for field in args:
         arcpy.AddField_management(f_in, field, "DOUBLE")
@@ -386,10 +395,17 @@ def dictb(f_in, tb, *args):
     fields.extend(list(args))
 
     sql = "{} IS NOT NULL".format(idrv)
-    cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb,fields,sql)}
+    cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor( tb, fields, sql)}
     return cursor
 
 def clasif(vx,v1,v2,neg=None):
+    """
+    descripcion: funcion que evalua un valor y devuelve su clase con respecto a dos puntos de control
+    vx : valor a evaluar
+    v1 : punto de control 1
+    v2 : punto de control 2
+    neg: parametro que evalua si se requiero considerar el negativo como clase para valores menores a cero
+    """
 
     if neg and vx<0:
         m = "NEGATIVO"
@@ -499,12 +515,13 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     for val in list_fields:
         arcpy.AddField_management(feature,val[0], val[1], "", "", val[2], val[3])
 
-    #Comenzamos con el actualizado final de campos
+    #Definimos la lista de campos para el proceso final de evaluacion
     eval_upd = []
     eval_upd.extend(upd_fields)
     eval_upd.extend(fields_eval)
     eval_upd.append("SHAPE@")
 
+    #Comenzamos con el actualizado final de campos
     with arcpy.da.UpdateCursor(feature, eval_upd, sql ) as cursorU:
 
         for i in cursorU:
