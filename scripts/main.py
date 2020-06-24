@@ -134,7 +134,7 @@ def bosque_vulnerable(feature, red_vial_pol):
     return table_bv
 
 def restauracion(feature, red_vial_pol):
-    mfl_roam = arcpy.MakeFeatureLayer_management(roam,"mfl_roam")
+    mfl_roam = arcpy.MakeFeatureLayer_management(feature,"mfl_roam")
 
     intersect_roam = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_roam, ""]], 
                                                 # out_feature_class='in_memory\\intersect_roam', 
@@ -161,9 +161,6 @@ def restauracion(feature, red_vial_pol):
 
     table_roam = arcpy.TableToTable_conversion(dissol_isc_roam, PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
     return table_roam
-    
-
-
 
 def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
 
@@ -256,7 +253,6 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
 
     table_ea = arcpy.TableToTable_conversion(dissol_ea, PATH_GDB, "RV_{}_EA".format(REGION[0]))
     return table_ea
-
 
 def habitante_ccpp(feature, red_vial_pol):
     mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
@@ -393,7 +389,6 @@ def main():
     process()
     end_time = datetime.now()
     print('Duration: {}'.format(end_time - start_time))
-
 
 if __name__ == '__main__':
     main()
