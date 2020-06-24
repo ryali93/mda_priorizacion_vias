@@ -558,19 +558,20 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 def process():
     fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
-    fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
-    print("termino cob1")
+    # fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
+    # print("termino cob1")
 
     # tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
     # print(tabla_turis)
-    # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    print(tabla_bv)
     
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
     # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
     # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
     # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
     # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
     # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
