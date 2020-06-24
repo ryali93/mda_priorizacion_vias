@@ -389,6 +389,19 @@ def dictb(f_in, tb, *args):
     cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb,fields,sql)}
     return cursor
 
+def clasif(vx,v1,v2,neg=None):
+
+    if neg and vx<0:
+        m = "NEGATIVO"
+    elif vx < v1 :
+        m ="BAJO"
+    elif vx >= v1 and vx <v2:
+        m = "MEDIO"
+    elif vx >= v2 :
+        m = "ALTO"
+
+    return m
+
 def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,tb8_brs,tb9_bvu, tb10_cpp):
 
     idrv = "ID_RV"
@@ -436,6 +449,7 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
 
     upd_fields = [idrv, fanp1, fanp2, ftur, fzdg, fres, fcagr, fpol, feag, fbrs, fbvu, fcpp]
+    ##############  0 ,   1  ,  2   ,   3 ,  4  ,  5  ,   6  ,  7  ,  8  ,  9  ,  10 ,  11 #########
 
     sql = "{} IS NOT NULL".format(idrv)
 
@@ -456,11 +470,71 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
             cursor.updateRow(row)
 
 
-    f_len  ="LENGTH_GEO" #DOUBLE
-    f_eval = "EVALUACION" #DOUBLE
-    f_evacl = "EVACLASE" #TEXTO, 10
-    f_amb = "AMBIENTAL" #DOUBLE
-    
+    # dic_fields={
+    # 'LENGTH_GEO' : ["LENGTH_GEO", "DOUBLE", "", "LENGTH_GEO"],
+    # 'EVALUACION' : ["EVALUACION", "DOUBLE", "", "Evauacion Final"],
+    # 'EVACLASE'   : ["EVACLASE", "TEXT", 10, "Clasificacion Evaluacion Final"],
+    # 'AMBIENTAL'  : ["AMBIENTAL", "DOUBLE", "", "Ambiental"],
+    # 'AMBCLASE'   : ["AMBCLASE", "TEXT", 10, "Evaluacion Ambiental Clasificacion"], 
+    # 'ECONOMICO'  : ["ECONOMICO", "DOUBLE", "", "Economico"],
+    # 'ECOCLASE'   : ["ECOCLASE", "TEXT", 10, "Evaluacion Economica Clasificacion"],
+    # 'SOCIAL'     : ["SOCIAL", "DOUBLE", "", "Social"],
+    # 'SOCCLASE'   : ["SOCCLASE", "TEXT", 10, "Evaluacion Social Clasificacion"]
+    #     }
+
+    list_fields=[
+    ["LENGTH_GEO", "DOUBLE", "", "LENGTH_GEO"],                     #12
+    ["EVALUACION", "DOUBLE", "", "Evauacion Final"],                #13
+    ["EVACLASE", "TEXT", 10, "Clasificacion Evaluacion Final"],     #14
+    ["AMBIENTAL", "DOUBLE", "", "Ambiental"],                       #15
+    ["AMBCLASE", "TEXT", 10, "Evaluacion Ambiental Clasificacion"], #16
+    ["ECONOMICO", "DOUBLE", "", "Economico"],                       #17
+    ["ECOCLASE", "TEXT", 10, "Evaluacion Economica Clasificacion"], #18
+    ["SOCIAL", "DOUBLE", "", "Social"],                             #19
+    ["SOCCLASE", "TEXT", 10, "Evaluacion Social Clasificacion"]     #20
+        ]
+    fields_eval = [x[0] for x in list_fields]
+
+    # Creamos los campos adicionales de análisis
+    for val in list_fields:
+        arcpy.AddField_management(feature,val[0], val[1], "", "", val[2], val[3])
+
+    #Comenzamos con el actualizado final de campos
+    eval_upd = []
+    eval_upd.extend(upd_fields)
+    eval_upd.extend(fields_eval)
+    eval_upd.append("SHAPE@")
+
+    with arcpy.da.UpdateCursor(feature, eval_upd, sql ) as cursorU:
+
+        for i in cursorU:
+
+            val_eval = i[3] +i[4] +i[5] +i[6] +i[7] +i[8] +i[9] -i[10] +i[11]
+            cls_eval = clasif(val_eval, 2.1, 4)
+
+            val_ambi = i[5] -i[10]+ i[4]
+            cls_ambi = clasif(val_ambi, 0.3, 0.7, 'si')
+
+            val_econ = i[3] +i[6] +i[7] + i[8]
+            cls_econ = clasif(val_econ, 1.5, 2.7)
+
+            val_soci = i[9] + i[11]
+            cls_soci = clasif(val_soci, 1.5, 2.7)
+
+            #campo area
+            i[12] = i[21].getLength("GEODESIC", "KILOMETERS")
+            i[13] = val_eval
+            i[14] = cls_eval
+            i[15] = val_ambi
+            i[16] = cls_ambi
+            i[17] = val_econ
+            i[18] = cls_econ
+            i[19] = val_soci
+            i[20] = cls_soci
+
+            cursorU.updateRow(i)
+
+
 
 
 
