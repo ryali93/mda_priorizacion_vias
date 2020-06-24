@@ -22,24 +22,24 @@ via_nacional = os.path.join(PATH_GDB, "via_nacional")
 via_departamental = os.path.join(PATH_GDB, "via_departamental")
 via_vecinal = os.path.join(PATH_GDB, "via_vecinal")
 
-via_merge = os.path.join(PATH_GDB, r"Insumos\rv_sanmartin_new")
+via_merge = os.path.join(PATH_GDB, r"Insumos/rv_sanmartin_new")
 
 # Areas naturales protegidas
 anp_teu = os.path.join(PATH_GDB, u"Ambiental\Áreas_Naturales_Protegidas_Definitivas")
 
 # Recursos turisticos
-fc_turis = os.path.join(PATH_GDB, u"Economico/atractivos_turisticos")
+fc_turis = os.path.join(PATH_GDB, u"Economico\atractivos_turisticos")
 
 # Bosques Vulnerables
-bosq_vuln = os.path.join(PATH_GDB, "bosq_vulnerable")
+bosq_vuln = os.path.join(PATH_GDB, r"Ambiental\BV_sanmartin_2018")
 # Restauracion ROAM
-fc_roam = os.path.join(PATH_GDB, "roam_features")
+fc_roam = os.path.join(PATH_GDB, r"Ambiental\ROAM_sanmartin")
 
 # Brechas sociales
-XLS_BRSOC = "ruta excel brechas sociales"
+tbp_brechas = os.path.join(PATH_GDB,r'puntaje_brechas_sociales')
 
 # Estadistica agraria
-XLS_ESTAGR = "ruta excel Estadistica agraria"
+tbp_estagr = os.path.join(PATH_GDB,r'puntaje_estadistica_agraria_2018')
 
 # Habitantes por centro poblado
 ccpp = os.path.join(PATH_GDB, "ccpp")

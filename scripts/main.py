@@ -134,12 +134,14 @@ def bosque_vulnerable(feature, red_vial_pol):
     return table_bv
 
 def restauracion(feature, red_vial_pol):
-    mfl_roam = arcpy.MakeFeatureLayer_management(feature,"mfl_roam")
+    mfl_roam = arcpy.MakeFeatureLayer_management(roam,"mfl_roam")
 
     intersect_roam = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_roam, ""]], 
-                                                out_feature_class='in_memory\\intersect_roam', 
+                                                # out_feature_class='in_memory\\intersect_roam', 
+                                                out_feature_class=os.path.join(SCRATCH, "intersect_roam"), 
                                                 join_attributes="ALL", 
                                                 cluster_tolerance="", output_type="INPUT")
+
     dissol_isc_roam = arcpy.Dissolve_management(in_features=intersect_roam, 
                                                 out_feature_class='in_memory\\dissol_isc_roam', 
                                                 dissolve_field=["ID_RV", "AREA_B5KM"], 
@@ -163,25 +165,26 @@ def restauracion(feature, red_vial_pol):
 
 
 
-def brechas_sociales(distritos, red_vial_pol, xlsfile):
+def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
 
     mfl_dist = arcpy.MakeFeatureLayer_management(distritos,"mfl_dist")
 
-    ubigeo = "codent"
+    ubigeo = "IDDIST"
     brecha = "PUNT_BRECHAS"
 
-    arcpy.AddField_management(mfl_dist, brecha , "TEXT","", "", 125)
+    arcpy.AddField_management(mfl_dist, brecha , "DOUBLE")
 
-    df_brecha =  pd.read_excel(xlsfile)
-    # df_brecha =  pd.read_excel(xlsfile,'HOJA1')
+    df_brecha = {str(int(x[0])).zfill(6):x[1] for x in arcpy.da.SearchCursor(tbpuntaje,["UBIGEO",brecha])}
 
-    # Actualizamos el campo brecha con los valores del xls
+    # Actualizamos el campo brecha con los valores de la tabla de puntaje
     with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,brecha]) as cursor:
         for row in cursor:
 
-            respuesta = df_brecha[df_brecha["UBIGEO"] == row[0]][brecha]
-            row[1] = respuesta.values.tolist()[0]
-            cursor.updateRow(row)
+            if df_brecha.get(row[0]):
+
+                respuesta = df_brecha.get(row[0])
+                row[1] = respuesta
+                cursor.updateRow(row)
 
     intersect_bs = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
                                             out_feature_class='in_memory\\intersect_bs', 
@@ -207,24 +210,29 @@ def brechas_sociales(distritos, red_vial_pol, xlsfile):
     table_bs = arcpy.TableToTable_conversion(dissol_bs, PATH_GDB, "RV_{}_BS".format(REGION[0]))
     return table_bs
 
-def estadistica_agraria(distritos, red_vial_pol, xlsfile):
+def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
 
     mfl_dist = arcpy.MakeFeatureLayer_management(distritos,"mfl_dist")
 
-    ubigeo = "codent"
+    ubigeo = "IDDIST"
     estad_agr = "P_ESTAD"
 
     arcpy.AddField_management(mfl_dist, estad_agr , "TEXT","", "", 125)
 
-    df_estad_agr =  pd.read_excel(xlsfile)
-    # df_estad_agr =  pd.read_excel(xlsfile,'HOJA1')
+    filtro = "UBIGEO is not NULL"
 
-    # Actualizamos el campo brecha con los valores del xls
+    df_estad_agr = {str(int(x[0])).zfill(6):x[1] for x in arcpy.da.SearchCursor(tbpuntaje,["UBIGEO",estad_agr], filtro)}
+
+    # Actualizamos el campo P_ESTAD con los valores de la tabla de puntaje
     with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,estad_agr]) as cursor:
         for row in cursor:
-            respuesta = df_estad_agr[df_estad_agr["UBIGEO"] == row[0]][estad_agr]
-            row[1] = respuesta.values.tolist()[0]
-            cursor.updateRow(row)
+
+            if df_estad_agr.get(row[0]):                
+            
+                respuesta = df_estad_agr.get(row[0])
+                row[1] = respuesta
+                cursor.updateRow(row)
+
 
     intersect_ea = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]], 
                                             out_feature_class='in_memory\\intersect_ea', 
@@ -360,17 +368,19 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
     return table_zd
 
 def process():
-    # fc_distritos = copy_distritos(distritos)
+    fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
     # fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
     #
     # tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
-    tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
-    print(tabla_turis)
+    # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
+    # print(tabla_turis)
     # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
-    # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, XLS_BRSOC)
-    # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, XLS_ESTAGR)
+    # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
+    tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
+    print(tabla_ea)
     # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
     # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
     # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
