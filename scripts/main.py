@@ -8,8 +8,11 @@ id_region = REGION[0]
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
 
 # Functions
-def fusion_capas(*args):
-    pass
+def merge_capas(path_salida, *args):
+    return arcpy.Merge_management(args, os.path.join(SCRATCH, path_salida))
+
+def copy_distritos(distritos):
+    return arcpy.CopyFeatures_management(distritos, os.path.join(SCRATCH, "distritos"))
 
 def cortar_region(feature, region):
     sql = "{} = '{}'".format("DEPNOM", region)
@@ -18,12 +21,14 @@ def cortar_region(feature, region):
     clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region"))
     return clip_region
 
-def red_vial(feature):
+def red_vial(via_nacional, via_departamental, via_vecinal, via_local):
     '''
     Devuelve las capas de lineas y poligonos a partir de la capa de vias con merge corregido
     '''
     # mfl_rv = arcpy.MakeFeatureLayer_management(feature, 'mfl_rv')
-    mfl_rv = arcpy.CopyFeatures_management(feature, os.path.join(SCRATCH, "mfl_rv"))
+    vias_merge = merge_capas(via_nacional, via_departamental, via_vecinal, via_local)
+    feature_clip = cortar_region(vias_merge, REGION[1])
+    mfl_rv = arcpy.CopyFeatures_management(feature_clip, os.path.join(SCRATCH, "mfl_rv"))
     desc = arcpy.Describe(mfl_rv)
     id_dep = REGION[0]
     fieldname = "ID_RV"
@@ -55,9 +60,6 @@ def red_vial(feature):
             cursor.updateRow(row)
     return mfl_rv, mfl_buffer
 
-def copy_distritos(distritos):
-    fc_dist = arcpy.CopyFeatures_management(distritos, os.path.join(SCRATCH, "distritos"))
-    return fc_dist
 
 def area_natural_protegida(feature, red_vial_line):
     fieldname1 = "anp_nomb"
@@ -195,12 +197,12 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
                 cursor.updateRow(row)
 
     intersect_bs = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
-                                            out_feature_class='in_memory\\intersect_bs', 
+                                            out_feature_class=os.path.join(SCRATCH, "intersect_bs"),
                                             join_attributes="ALL", cluster_tolerance="", 
                                             output_type="INPUT")
 
     dissol_bs = arcpy.Dissolve_management(in_features=intersect_bs, 
-                                            out_feature_class='in_memory\\dissol_bs', 
+                                            out_feature_class=os.path.join(SCRATCH, "dissol_bs"),
                                             dissolve_field=["ID_RV", "AREA_B5KM", "PUNT_BRECHAS"], 
                                             statistics_fields=[], multi_part="MULTI_PART", 
                                             unsplit_lines="DISSOLVE_LINES")
@@ -556,7 +558,6 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     with arcpy.da.UpdateCursor(feature, eval_upd, sql ) as cursorU:
 
         for i in cursorU:
-
             val_eval = i[3] +i[4] +i[5] +i[6] +i[7] +i[8] +i[9] -i[10] +i[11]
             cls_eval = clasif(val_eval, 2.1, 4)
 
@@ -579,18 +580,17 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
             i[18] = cls_econ
             i[19] = val_soci
             i[20] = cls_soci
-
             cursorU.updateRow(i)
     print("UPDATE 2 finish")
 
 def process():
-    # start_time = datetime.now()
-    # fc_distritos = copy_distritos(distritos)
-    # print("copy_distritos", datetime.now())
-    red_vial_line, red_vial_pol = red_vial(via_merge)
+    start_time = datetime.now()
+    fc_distritos = copy_distritos(distritos)
+    print("copy_distritos", datetime.now())
+    red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal, via_local)
     print("red_vial", datetime.now())
-    # fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
-    # print("cobertura_agricola_1", datetime.now())
+    fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
+    print("cobertura_agricola_1", datetime.now())
 
     # tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     # print("area_natural_protegida", datetime.now())
@@ -601,26 +601,27 @@ def process():
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
     # print("restauracion", datetime.now())
     # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
-    # print("brechas_sociales", datetime.now())
-    # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
-    # print("estadistica_agraria", datetime.now())
-    # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    # print("cobertura_agricola_2", datetime.now())
-    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
-    # print("polos_intensificacion", datetime.now())
-    # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
-    # print("zona_degradada_sin_cob_agricola", datetime.now())
-    # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
-    # print("habitante_ccpp", datetime.now())
-    #
-    # end_time = datetime.now()
-    # print('Duration: {}'.format(end_time - start_time))
+    print("brechas_sociales", datetime.now())
+    tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
+    print("estadistica_agraria", datetime.now())
+    tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
+    print("cobertura_agricola_2", datetime.now())
+    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    print("polos_intensificacion", datetime.now())
+    tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
+    print("zona_degradada_sin_cob_agricola", datetime.now())
+    tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
+    print("habitante_ccpp", datetime.now())
 
-    red_vial_line = r'C:\Users\ryali93\AppData\Local\Temp\scratch.gdb\mfl_rv'
-    jointables(red_vial_line, r'E:\2020\mda\PRVDA.gdb\RV_SM_ANP', r'E:\2020\mda\PRVDA.gdb\RV_SM_TUR', r'E:\2020\mda\PRVDA.gdb\tb_SM_zd',
-     r'E:\2020\mda\PRVDA.gdb\RV_SM_ROAM', r'E:\2020\mda\PRVDA.gdb\tb_cagri_SM', r'E:\2020\mda\PRVDA.gdb\tb_polos_SM',
-     r'E:\2020\mda\PRVDA.gdb\RV_SM_EA', r'E:\2020\mda\PRVDA.gdb\RV_SM_BS', r'E:\2020\mda\PRVDA.gdb\RV_SM_BV',
-     r'E:\2020\mda\PRVDA.gdb\RV_SM_CCPP')
+    # jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea, tabla_bs, tabla_bv, tabla_ccpp)
+    # red_vial_line = r'C:\Users\ryali93\AppData\Local\Temp\scratch.gdb\mfl_rv'
+    # jointables(red_vial_line, r'E:\2020\mda\PRVDA.gdb\RV_SM_ANP', r'E:\2020\mda\PRVDA.gdb\RV_SM_TUR', r'E:\2020\mda\PRVDA.gdb\tb_SM_zd',
+    #  r'E:\2020\mda\PRVDA.gdb\RV_SM_ROAM', r'E:\2020\mda\PRVDA.gdb\tb_cagri_SM', r'E:\2020\mda\PRVDA.gdb\tb_polos_SM',
+    #  r'E:\2020\mda\PRVDA.gdb\RV_SM_EA', r'E:\2020\mda\PRVDA.gdb\RV_SM_BS', r'E:\2020\mda\PRVDA.gdb\RV_SM_BV',
+    #  r'E:\2020\mda\PRVDA.gdb\RV_SM_CCPP')
+
+    end_time = datetime.now()
+    print('Duration: {}'.format(end_time - start_time))
 
 
 def main():

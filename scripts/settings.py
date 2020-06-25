@@ -20,11 +20,10 @@ departamentos = os.path.join(PATH_GDB, "insumos/departamentos_peru")
 distritos = os.path.join(PATH_GDB, "insumos/distritos_peru")
 
 # Red vial
-via_nacional = os.path.join(PATH_GDB, "via_nacional")
-via_departamental = os.path.join(PATH_GDB, "via_departamental")
-via_vecinal = os.path.join(PATH_GDB, "via_vecinal")
-
-via_merge = os.path.join(PATH_GDB, r"Insumos/rv_sanmartin_new")
+via_nacional = os.path.join(PATH_GDB, "Insumos/red_vial_departamental_MTC")
+via_departamental = os.path.join(PATH_GDB, "Insumos/red_vial_nacional_MTC")
+via_vecinal = os.path.join(PATH_GDB, "Insumos/red_vial_vecinal_MTC")
+via_local = os.path.join(PATH_GDB, r"Insumos/rv_sanmartin_new")
 
 # Areas naturales protegidas
 anp_teu = os.path.join(PATH_GDB, u"Ambiental/Áreas_Naturales_Protegidas_Definitivas")
@@ -34,6 +33,7 @@ fc_turis = os.path.join(PATH_GDB, u"Economico/atractivos_turisticos")
 
 # Bosques Vulnerables
 bosq_vuln = os.path.join(PATH_GDB, r"Ambiental\BV_sanmartin_2018")
+
 # Restauracion ROAM
 fc_roam = os.path.join(PATH_GDB, r"Ambiental\ROAM_sanmartin")
 
