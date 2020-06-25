@@ -4,7 +4,7 @@ import os
 
 arcpy.env.overwriteOutput = True
 arcpy.env.parallelProcessingFactor = "100%"
-arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("WGS 1984 UTM Zone 18S")
+# arcpy.env.outputCoordinateSystem = arcpy.SpatialReference("WGS 1984 UTM Zone 18S")
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 PATH_GDB = os.path.join(BASE_DIR, "PRVDA.gdb")
@@ -16,6 +16,7 @@ SCRATCH = arcpy.env.scratchGDB
 # Paths
 
 # INSUMOS
+departamentos = os.path.join(PATH_GDB, "insumos/departamentos_peru")
 distritos = os.path.join(PATH_GDB, "insumos/distritos_peru")
 
 # Red vial
@@ -49,7 +50,7 @@ ccpp = os.path.join(PATH_GDB, r"Social\ccpp_peru_2017")
 cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018")
 
 # Polos de intensificacion productiva en cobertura agricola
-bosque = os.path.join(PATH_GDB, r"Ambiental\bnb2018_peru")
+bosque = os.path.join(PATH_GDB, r"Ambiental\Bosque_No_Bosque_2018_peru")
 pot_product = os.path.join(PATH_GDB, r"Economico\polos_sanmartin")
 
 

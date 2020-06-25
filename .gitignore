@@ -2,3 +2,12 @@
 *.pyc
 *.xml
 \.idea
+*.cpg
+*.dbf
+*.prj
+*.sbn
+*.sbx
+*.shp
+*.xml
+*.shx
+*.xlsx

@@ -4,9 +4,19 @@ import pandas as pd
 
 REGION = REGIONES[22]
 id_region = REGION[0]
-sql = "{} = '{}'".format("DEPARTAMEN", REGION[1])
+sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
 
 # Functions
+def fusion_vias(*args):
+    pass
+
+def cortar_region(feature, region):
+    sql = "{} = '{}'".format("DEPNOM", region)
+    mfl_region = arcpy.MakeFeatureLayer_management(departamentos, "mfl_region", sql)
+    fc_region = arcpy.CopyFeatures_management(mfl_region, os.path.join(SCRATCH, "region"))
+    clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region"))
+    return clip_region
+
 def red_vial(feature):
     '''
     Devuelve las capas de lineas y poligonos a partir de la capa de vias con merge corregido
@@ -26,13 +36,13 @@ def red_vial(feature):
             cursor.updateRow(row)
     del cursor
     buffer_name = 'B5KM_RV_{}'.format(id_dep)
-    bf = arcpy.Buffer_analysis(in_features=mfl_rv, out_feature_class='in_memory\\{}'.format(buffer_name),
+    bf = arcpy.Buffer_analysis(in_features=mfl_rv, out_feature_class=os.path.join(SCRATCH, buffer_name),
                                buffer_distance_or_field="5 Kilometers", line_side="FULL", line_end_type="ROUND",
                                dissolve_option="NONE", dissolve_field=[], method="PLANAR")
-    bf_fc = bf.getOutput(0)
+    mfl_buffer = bf.getOutput(0)
 
-    arcpy.AddField_management(bf_fc, field_area, "DOUBLE")
-    mfl_buffer = arcpy.MakeFeatureLayer_management(bf_fc, "mfl_buffer")
+    arcpy.AddField_management(mfl_buffer, field_area, "DOUBLE")
+    # mfl_buffer = arcpy.MakeFeatureLayer_management(bf_fc, "mfl_buffer")
 
     # Se calcula el area del buffer 5km para read vial
     with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
@@ -310,14 +320,17 @@ def cobertura_agricola_2(feature, red_vial_pol):
     return table_cob_agricola
 
 def polos_intensificacion(feature, cobertura, red_vial_pol):
+    # feature_clip = cortar_region(feature, REGION[1])
+    feature_clip = arcpy.MakeFeatureLayer_management(os.path.join(SCRATCH, "clip_region"), "feature_clip")
+    print("feature_clip")
     sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
-    mfl_bosque = arcpy.MakeFeatureLayer_management(feature, "mfl_bosque", sql)
+    mfl_bosque = arcpy.MakeFeatureLayer_management(feature_clip, "mfl_bosque", sql)
     dissol_bosque = arcpy.Dissolve_management(mfl_bosque, os.path.join(SCRATCH,"dissol_bosque"), [], [],
                                               "MULTI_PART", "DISSOLVE_LINES")
     print("dissol_bosque")
 
     sql_2 = u"Cobertura = 'BOSQUE 2018'"
-    mfl_bosque_2 = arcpy.MakeFeatureLayer_management(feature, "mfl_bosque_2", sql_2)
+    mfl_bosque_2 = arcpy.MakeFeatureLayer_management(feature_clip, "mfl_bosque_2", sql_2)
     dissol_bosque_2 = arcpy.Dissolve_management(mfl_bosque_2, os.path.join(SCRATCH,"dissol_bosque_2"), [], [],
                                                 "MULTI_PART", "DISSOLVE_LINES")
     print("dissol_bosque_2")
@@ -551,25 +564,21 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
             cursorU.updateRow(i)
 
-
-
-
-
 def process():
     fc_distritos = copy_distritos(distritos)
     red_vial_line, red_vial_pol = red_vial(via_merge)
-    # fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
-    # print("termino cob1")
+    fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
+    print("termino cob1")
 
     # tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
     # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
     # print(tabla_turis)
-    tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
     # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
     # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
     # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
     # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
     # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
 
