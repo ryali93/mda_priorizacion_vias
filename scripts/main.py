@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 from settings import *
 import pandas as pd
+from datetime import datetime
 
 REGION = REGIONES[22]
 id_region = REGION[0]
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
 
 # Functions
-def fusion_vias(*args):
+def fusion_capas(*args):
     pass
 
 def cortar_region(feature, region):
@@ -21,7 +22,8 @@ def red_vial(feature):
     '''
     Devuelve las capas de lineas y poligonos a partir de la capa de vias con merge corregido
     '''
-    mfl_rv = arcpy.MakeFeatureLayer_management(feature, 'mfl_rv')
+    # mfl_rv = arcpy.MakeFeatureLayer_management(feature, 'mfl_rv')
+    mfl_rv = arcpy.CopyFeatures_management(feature, os.path.join(SCRATCH, "mfl_rv"))
     desc = arcpy.Describe(mfl_rv)
     id_dep = REGION[0]
     fieldname = "ID_RV"
@@ -58,21 +60,18 @@ def copy_distritos(distritos):
     return fc_dist
 
 def area_natural_protegida(feature, red_vial_line):
-    fieldname1 = "ANPC_NOMB"
-    fieldname2 = "ANPC_NOMB"
+    fieldname1 = "anp_nomb"
+    fieldname2 = "anp_cate"
     mfl_ft = arcpy.MakeFeatureLayer_management(feature, "mfl_ft")
     mfl_rv = arcpy.MakeFeatureLayer_management(red_vial_line, "mfl_rv")
 
     intersect_out_mfl = arcpy.Intersect_analysis([mfl_ft, mfl_rv], "in_memory\\intersect_anp")
-
-    field_names = [f.name for f in arcpy.ListFields(intersect_out_mfl)]
 
     dissol_anp = arcpy.Dissolve_management(in_features=intersect_out_mfl,
                                            out_feature_class="in_memory\\dissol_anp", dissolve_field=["ID_RV"],
                                            statistics_fields=[[fieldname1, "MAX"], [fieldname2, "MAX"]],
                                            multi_part="MULTI_PART",
                                            unsplit_lines="DISSOLVE_LINES")
-    # ["ANPC_NOMB", "MAX"], ["ANPC_CAT", "MAX"]
 
     table_anp = arcpy.TableToTable_conversion(dissol_anp, PATH_GDB, "RV_{}_ANP".format(REGION[0]))
     return table_anp
@@ -81,19 +80,19 @@ def recursos_turisticos(feature, red_vial_pol):
     sql = "DPTO = 'San Martin'"
     fieldname = "P_RECTURIS"
     mfl_turis = arcpy.MakeFeatureLayer_management(feature, "mfl_turis", sql)
-    buffer_turis = arcpy.Buffer_analysis(in_features=mfl_turis, out_feature_class='in_memory\\buffer_turis',
+    buffer_turis = arcpy.Buffer_analysis(in_features=mfl_turis, out_feature_class=os.path.join(SCRATCH, "buffer_turis"),
                                          buffer_distance_or_field="10 Kilometers", line_side="FULL",
                                          line_end_type="ROUND", dissolve_option="NONE",
                                          dissolve_field=[], method="PLANAR")
     buffer_turis = buffer_turis.getOutput(0)
 
     dissol_turis = arcpy.Dissolve_management(in_features=buffer_turis,
-                                             out_feature_class='in_memory\\dissol_turis',
+                                             out_feature_class=os.path.join(SCRATCH, "dissol_turis"),
                                              dissolve_field=[],
                                              statistics_fields=[], multi_part="MULTI_PART",
                                              unsplit_lines="DISSOLVE_LINES")
     intersect_turis = arcpy.Intersect_analysis(in_features=[[dissol_turis, ""], [red_vial_pol, ""]],
-                                               out_feature_class='in_memory\\intersect_turis',
+                                               out_feature_class=os.path.join(SCRATCH, "intersect_turis"),
                                                join_attributes="ALL",
                                                cluster_tolerance="", output_type="INPUT")
     isc_fc = intersect_turis.getOutput(0)
@@ -101,13 +100,13 @@ def recursos_turisticos(feature, red_vial_pol):
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
-    with arcpy.da.UpdateCursor(buffer_turis, ["SHAPE@", fieldname, "AREA_B5KM"]) as cursor:
+    with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC","HECTARES")
             row[1] = area_ha/row[2]
             cursor.updateRow(row)
     dissol_isc_rectur = arcpy.Dissolve_management(in_features=isc_fc,
-                                                  out_feature_class='in_memory\\dissol_isc_rectur' ,
+                                                  out_feature_class=os.path.join(SCRATCH, "dissol_isc_rectur") ,
                                                   dissolve_field=["ID_RV"],
                                                   statistics_fields=[[fieldname, "SUM"]],
                                                   multi_part="MULTI_PART",
@@ -244,11 +243,11 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
 
 
     intersect_ea = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]], 
-                                            out_feature_class='in_memory\\intersect_ea', 
+                                            out_feature_class=os.path.join(SCRATCH, "intersect_ea"),
                                             join_attributes="ALL", 
                                             cluster_tolerance="", output_type="INPUT")
     dissol_ea = arcpy.Dissolve_management(in_features=intersect_ea, 
-                                            out_feature_class='in_memory\\dissol_ea', 
+                                            out_feature_class=os.path.join(SCRATCH, "dissol_ea"),
                                             dissolve_field=["ID_RV", "AREA_B5KM", "P_ESTAD"], 
                                             statistics_fields=[], multi_part="MULTI_PART", 
                                             unsplit_lines="DISSOLVE_LINES")
@@ -320,8 +319,8 @@ def cobertura_agricola_2(feature, red_vial_pol):
     return table_cob_agricola
 
 def polos_intensificacion(feature, cobertura, red_vial_pol):
-    # feature_clip = cortar_region(feature, REGION[1])
-    feature_clip = arcpy.MakeFeatureLayer_management(os.path.join(SCRATCH, "clip_region"), "feature_clip")
+    feature_clip = cortar_region(feature, REGION[1])
+    # feature_clip = arcpy.MakeFeatureLayer_management(os.path.join(SCRATCH, "clip_region"), "feature_clip")
     print("feature_clip")
     sql = u"Cobertura = 'NO BOSQUE 2000' Or Cobertura = 'PÉRDIDA 2001-201'"
     mfl_bosque = arcpy.MakeFeatureLayer_management(feature_clip, "mfl_bosque", sql)
@@ -347,20 +346,20 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     print("cobertura_dissol")
 
     polos_intersect = arcpy.Intersect_analysis(in_features=[[cobertura_dissol, ""], [pot_product, ""], [red_vial_pol, ""]],
-                                               out_feature_class=os.path.join(SCRATCH,"polos_intersect"))
+                                               out_feature_class=os.path.join(SCRATCH,"polos_intersect1"))
     print("polos_intersect")
     sql_3 = "PP = 'AP-AC-FL' Or PP = 'AP-AC' Or PP = 'AP-AC'"
-    polos_mfl = arcpy.MakeFeatureLayer_management(polos_intersect, "polos_mfl", sql_3)
-    arcpy.AddField_management(polos_mfl, "PNTPOLOS", "DOUBLE")
-
     field = "PNTPOLOS"
-    with arcpy.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field]) as cursor:
+    polos_mfl = arcpy.Select_analysis(polos_intersect, os.path.join(SCRATCH, "polos_mfl"), sql_3)
+    arcpy.AddField_management(polos_mfl, field, "DOUBLE")
+
+    with arcpy.da.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[2] = area_ha / row[1]
             cursor.updateRow(row)
 
-    cobertura_dissol_f = arcpy.Dissolve_management(polos_mfl, "in_memory\\cobertura_dissol_f",
+    cobertura_dissol_f = arcpy.Dissolve_management(polos_mfl, os.path.join(SCRATCH, "cobertura_dissol_f"),
                                                    dissolve_field=["ID_RV"], statistics_fields=[[field, "SUM"]],
                                                    multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
     print("cobertura_dissol_f")
@@ -369,9 +368,9 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     return dissol_bosque, cobertura_erase, table_cob_agricola
 
 def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol):
-    erase_zd = arcpy.Erase_analysis(bosque_nobosque, cob_agri_sinbosque, "in_memory\\bnb_sin_cob_agri")
-    intersect_zd = arcpy.Intersect_analysis([[erase_zd, ""], [red_vial_pol, ""]], "in_memory\\zd_intersect")
-    dissol_zd = arcpy.Dissolve_management(intersect_zd, "in_memory\\zd_dissol",["ID_RV", "AREA_B5KM"],
+    erase_zd = arcpy.Erase_analysis(bosque_nobosque, cob_agri_sinbosque, os.path.join(SCRATCH, "bnb_sin_cob_agri"))
+    intersect_zd = arcpy.Intersect_analysis([[erase_zd, ""], [red_vial_pol, ""]], os.path.join(SCRATCH, "zd_intersect"))
+    dissol_zd = arcpy.Dissolve_management(intersect_zd, os.path.join(SCRATCH, "zd_dissol"),["ID_RV", "AREA_B5KM"],
                                           statistics_fields=[], multi_part="MULTI_PART",
                                           unsplit_lines="DISSOLVE_LINES")
 
@@ -400,7 +399,11 @@ def dictb(f_in, tb, *args):
     """
 
     for field in args:
-        arcpy.AddField_management(f_in, field, "DOUBLE")
+        print(field)
+        if field.startswith("MAX"):
+            arcpy.AddField_management(f_in, field, "TEXT", "#", "#", 100)
+        else:
+            arcpy.AddField_management(f_in, field, "DOUBLE")
 
     fields = []
     idrv = "ID_RV"
@@ -408,7 +411,7 @@ def dictb(f_in, tb, *args):
     fields.extend(list(args))
 
     sql = "{} IS NOT NULL".format(idrv)
-    cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor( tb, fields, sql)}
+    cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb, fields, sql)}
     return cursor
 
 def clasif(vx,v1,v2,neg=None):
@@ -436,45 +439,56 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     idrv = "ID_RV"
     # Se crean campos y cursor para las tablas
     # Areas naturales anp
-    fanp1 = "MAX_ANPC_NOMB"
-    fanp2 = "MAX_ANPC_CAT"
+    fanp1 = "MAX_anp_nomb"
+    fanp2 = "MAX_anp_cate"
     c_anp = dictb(feature,tb1_anp, fanp1, fanp2)
+    print(c_anp)
+    print("c_anp")
 
     # Recursos turisticos turis
     ftur = "SUM_P_RECTURIS"
     c_tur = dictb(feature,tb2_tur, ftur)
+    print("c_tur")
 
     # Zona degradad
     fzdg = "PNT_ZDEGRA_SINCAGRO"
     c_zdg = dictb(feature, tb3_zdg, fzdg)
+    print("c_zdg")
 
     # Restauracion ROAM
     fres = "PNTROAM"
     c_res = dictb(feature, tb4_res, fres)
+    print("c_res")
 
     # Cobertura agricola
     fcagr = "SUM_P_CAGRI"
     c_cagr = dictb(feature, tb5_cagr, fcagr)
+    print("c_cagr")
 
     # Polos
     fpol = "SUM_PNTPOLOS"
     c_pol = dictb(feature, tb6_pol, fpol)
+    print("c_pol")
 
     # Estadistica Agraria
     feag = "PNTESTAGRI"
     c_eag = dictb(feature, tb7_eag, feag)
+    print("c_eag")
 
     # Brechas Sociales
     fbrs = "PNTBRECHAS"
     c_brs = dictb(feature, tb8_brs, fbrs)
+    print("c_brs")
 
     # Bosques vulnerables
     fbvu = "PNTBV"
     c_bvu = dictb(feature, tb9_bvu, fbvu)
+    print("c_bvu")
 
     # Habitantes por centro poblado
     fcpp = "SUM_REPREPOBLA"
     c_cpp = dictb(feature, tb10_cpp, fcpp)
+    print("c_cpp")
 
 
     upd_fields = [idrv, fanp1, fanp2, ftur, fzdg, fres, fcagr, fpol, feag, fbrs, fbvu, fcpp]
@@ -485,18 +499,20 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     with arcpy.da.UpdateCursor(feature, upd_fields, sql) as cursor:
 
         for row in cursor:
-            row[1] = c_anp.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[2] = c_anp.get(row[0])[1] if c_anp.get(row[0]) else 0
-            row[3] = c_tur.get(row[0])[1] if c_anp.get(row[0]) else 0
-            row[4] = c_zdg.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[5] = c_res.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[6] = c_cagr.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[7] = c_pol.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[8] = c_eag.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[9] = c_brs.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[10] = c_bvu.get(row[0])[0] if c_anp.get(row[0]) else 0
-            row[11] = c_cpp.get(row[0])[0] if c_anp.get(row[0]) else 0
+            row[1] = c_anp.get(row[0])[0] if c_anp.get(row[0]) else "0"
+            row[2] = c_anp.get(row[0])[1] if c_anp.get(row[0]) else "0"
+            row[3] = c_tur.get(row[0])[0] if c_tur.get(row[0]) else 0
+            row[4] = c_zdg.get(row[0])[0] if c_zdg.get(row[0]) else 0
+            row[5] = c_res.get(row[0])[0] if c_res.get(row[0]) else 0
+            row[6] = c_cagr.get(row[0])[0] if c_cagr.get(row[0]) else 0
+            row[7] = c_pol.get(row[0])[0] if c_pol.get(row[0]) else 0
+            row[8] = c_eag.get(row[0])[0] if c_eag.get(row[0]) else 0
+            row[9] = c_brs.get(row[0])[0] if c_brs.get(row[0]) else 0
+            row[10] = c_bvu.get(row[0])[0] if c_bvu.get(row[0]) else 0
+            row[11] = c_cpp.get(row[0])[0] if c_cpp.get(row[0]) else 0
             cursor.updateRow(row)
+
+    print("UPDATE 1 finish")
 
 
     # dic_fields={
@@ -534,6 +550,8 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     eval_upd.extend(fields_eval)
     eval_upd.append("SHAPE@")
 
+    print("Fields agregados")
+
     #Comenzamos con el actualizado final de campos
     with arcpy.da.UpdateCursor(feature, eval_upd, sql ) as cursorU:
 
@@ -563,32 +581,50 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
             i[20] = cls_soci
 
             cursorU.updateRow(i)
+    print("UPDATE 2 finish")
 
 def process():
-    fc_distritos = copy_distritos(distritos)
+    # start_time = datetime.now()
+    # fc_distritos = copy_distritos(distritos)
+    # print("copy_distritos", datetime.now())
     red_vial_line, red_vial_pol = red_vial(via_merge)
-    fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
-    print("termino cob1")
+    print("red_vial", datetime.now())
+    # fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
+    # print("cobertura_agricola_1", datetime.now())
 
     # tabla_anp = area_natural_protegida(anp_teu, red_vial_line)
+    # print("area_natural_protegida", datetime.now())
     # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
-    # print(tabla_turis)
+    # print("recursos_turisticos", datetime.now())
     # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    # print("bosque_vulnerable", datetime.now())
     # tabla_roam = restauracion(fc_roam, red_vial_pol)
+    # print("restauracion", datetime.now())
     # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
+    # print("brechas_sociales", datetime.now())
     # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
+    # print("estadistica_agraria", datetime.now())
     # tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
-    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    # print("cobertura_agricola_2", datetime.now())
+    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    # print("polos_intensificacion", datetime.now())
     # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
+    # print("zona_degradada_sin_cob_agricola", datetime.now())
     # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
+    # print("habitante_ccpp", datetime.now())
+    #
+    # end_time = datetime.now()
+    # print('Duration: {}'.format(end_time - start_time))
+
+    red_vial_line = r'C:\Users\ryali93\AppData\Local\Temp\scratch.gdb\mfl_rv'
+    jointables(red_vial_line, r'E:\2020\mda\PRVDA.gdb\RV_SM_ANP', r'E:\2020\mda\PRVDA.gdb\RV_SM_TUR', r'E:\2020\mda\PRVDA.gdb\tb_SM_zd',
+     r'E:\2020\mda\PRVDA.gdb\RV_SM_ROAM', r'E:\2020\mda\PRVDA.gdb\tb_cagri_SM', r'E:\2020\mda\PRVDA.gdb\tb_polos_SM',
+     r'E:\2020\mda\PRVDA.gdb\RV_SM_EA', r'E:\2020\mda\PRVDA.gdb\RV_SM_BS', r'E:\2020\mda\PRVDA.gdb\RV_SM_BV',
+     r'E:\2020\mda\PRVDA.gdb\RV_SM_CCPP')
 
 
 def main():
-    from datetime import datetime
-    start_time = datetime.now()
     process()
-    end_time = datetime.now()
-    print('Duration: {}'.format(end_time - start_time))
 
 if __name__ == '__main__':
     main()

@@ -27,10 +27,10 @@ via_vecinal = os.path.join(PATH_GDB, "via_vecinal")
 via_merge = os.path.join(PATH_GDB, r"Insumos/rv_sanmartin_new")
 
 # Areas naturales protegidas
-anp_teu = os.path.join(PATH_GDB, u"Ambiental\Áreas_Naturales_Protegidas_Definitivas")
+anp_teu = os.path.join(PATH_GDB, u"Ambiental/Áreas_Naturales_Protegidas_Definitivas")
 
 # Recursos turisticos
-fc_turis = os.path.join(PATH_GDB, u"Economico\atractivos_turisticos")
+fc_turis = os.path.join(PATH_GDB, u"Economico/atractivos_turisticos")
 
 # Bosques Vulnerables
 bosq_vuln = os.path.join(PATH_GDB, r"Ambiental\BV_sanmartin_2018")
@@ -51,7 +51,7 @@ cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018")
 
 # Polos de intensificacion productiva en cobertura agricola
 bosque = os.path.join(PATH_GDB, r"Ambiental\Bosque_No_Bosque_2018_peru")
-pot_product = os.path.join(PATH_GDB, r"Economico\polos_sanmartin")
+pot_product = os.path.join(PATH_GDB, r"Economico\polos_sanmartin_2018")
 
 
 REGIONES = {1:  ["AMA", "AMAZONAS"],
@@ -75,7 +75,7 @@ REGIONES = {1:  ["AMA", "AMAZONAS"],
             19: ["PAS", "PASCO"],
             20: ["PIU", "PIURA"],
             21: ["PUN", "PUNO"],
-            22: ["SAN", "SAN MARTIN"],
+            22: ["SM", "SAN MARTIN"],
             23: ["TAC", "TACNA"],
             24: ["TUM", "TUMBES"],
             25: ["UCA", "UCAYALI"]}
