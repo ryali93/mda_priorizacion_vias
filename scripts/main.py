@@ -409,11 +409,11 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[1] = area_ha
             row[2] = area_ha / row[3]
+            cursor.updateRow(row)
     del cursor
 
     table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "tb_{}_zd".format(REGION[0]))
     return table_zd
-
 
 def dictb(f_in, tb, *args):
     """
@@ -598,36 +598,36 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     print("UPDATE 2 finish")
 
 def process():
+    # red_vial_line = os.path.join(SCRATCH, "mfl_rv")
+    # red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_{}".format(REGION[0]))
+
     start_time = datetime.now()
     arcpy.AddMessage("El proceso inicia - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     fc_distritos = copy_distritos(distritos)
-    # red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal, via_local)
-    # red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal)
-    # arcpy.AddMessage("Se generaron las redes viales (lineas y poligonos) - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    red_vial_line = os.path.join(SCRATCH, "mfl_rv")
-    red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_{}".format(REGION[0]))
+    red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal)
+    arcpy.AddMessage("Se generaron las redes viales (lineas y poligonos) - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
     arcpy.AddMessage("Se realizo la primera parte del proceso de cobertura agricola - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_anp = area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, anp_zr)
-    # arcpy.AddMessage("Termino proceso de ANP - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
-    # arcpy.AddMessage("Termino proceso de Recursos turisticos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
-    # arcpy.AddMessage("Termino proceso de Bosques vulnerables - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_roam = restauracion(fc_roam, red_vial_pol)
-    # arcpy.AddMessage("Termino proceso de Restauracion - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
-    # arcpy.AddMessage("Termino proceso de Brechas sociales - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
-    # arcpy.AddMessage("Termino proceso de Estadistica agraria - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_anp = area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, anp_zr)
+    arcpy.AddMessage("Termino proceso de ANP - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
+    arcpy.AddMessage("Termino proceso de Recursos turisticos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    arcpy.AddMessage("Termino proceso de Bosques vulnerables - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_roam = restauracion(fc_roam, red_vial_pol)
+    arcpy.AddMessage("Termino proceso de Restauracion - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
+    arcpy.AddMessage("Termino proceso de Brechas sociales - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
+    arcpy.AddMessage("Termino proceso de Estadistica agraria - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
     arcpy.AddMessage("Termino proceso de Cobertura agricola - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
-    # arcpy.AddMessage("Termino proceso de Polos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
-    # arcpy.AddMessage("Termino Zonas degradadas - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
-    # arcpy.AddMessage("Termino el proceso de habitantes - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    arcpy.AddMessage("Termino proceso de Polos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
+    arcpy.AddMessage("Termino Zonas degradadas - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
+    arcpy.AddMessage("Termino el proceso de habitantes - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
     # tabla_anp = os.path.join(PATH_GDB, "RV_{}_ANP".format(REGION[0]))
     # tabla_turis = os.path.join(PATH_GDB, "RV_{}_TUR".format(REGION[0]))
@@ -639,13 +639,12 @@ def process():
     # tabla_bs = os.path.join(PATH_GDB, "RV_{}_BS".format(REGION[0]))
     # tabla_bv = os.path.join(PATH_GDB, "RV_{}_BV".format(REGION[0]))
     # tabla_ccpp = os.path.join(PATH_GDB, "RV_{}_CCPP".format(REGION[0]))
-    #
-    # jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea, tabla_bs, tabla_bv, tabla_ccpp)
+
+    jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea, tabla_bs, tabla_bv, tabla_ccpp)
 
     end_time = datetime.now()
     arcpy.AddMessage("El proceso finaliza - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     arcpy.AddMessage('Duracion: {}'.format(end_time - start_time))
-
 
 def main():
     process()
