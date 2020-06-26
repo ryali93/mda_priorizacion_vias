@@ -53,8 +53,7 @@ cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018")
 bosque = os.path.join(PATH_GDB, r"Ambiental\Bosque_No_Bosque_2018_peru")
 pot_product = os.path.join(PATH_GDB, r"Economico\polos_sanmartin_2018")
 
-
-REGIONES = {1:  ["AMA", "AMAZONAS", 813381],
+REGIONES = {1:  ["AMA", "AMAZONAS", 417365],
             2:  ["ANC", "ANCASH", 813381],
             3:  ["APU", "APURIMAC", 813381],
             4:  ["ARE", "AREQUIPA", 813381],
@@ -80,5 +79,8 @@ REGIONES = {1:  ["AMA", "AMAZONAS", 813381],
             24: ["TUM", "TUMBES", 813381],
             25: ["UCA", "UCAYALI", 813381]}
 
-REGION = REGIONES[22]
+cod_reg = 22 # Elegir la region que corresponde
+
+REGION = REGIONES[cod_reg]
 POB_REGION  = REGION[2]
+id_region = str(cod_reg).zfill(2)

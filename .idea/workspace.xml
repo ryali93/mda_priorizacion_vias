@@ -127,26 +127,26 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="722" y="324" key="#com.intellij.fileTypes.FileTypeChooser/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1592958402440" />
-    <state x="740" y="276" key="FileChooserDialogImpl" timestamp="1592956250341">
+    <state x="740" y="276" key="FileChooserDialogImpl" timestamp="1593181168718">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="740" y="276" key="FileChooserDialogImpl/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1592956250341" />
-    <state width="1899" height="222" key="GridCell.Tab.0.bottom" timestamp="1593152359941">
+    <state x="740" y="276" key="FileChooserDialogImpl/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593181168718" />
+    <state width="1899" height="222" key="GridCell.Tab.0.bottom" timestamp="1593199474275">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="222" key="GridCell.Tab.0.bottom/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593152359941" />
-    <state width="1899" height="222" key="GridCell.Tab.0.center" timestamp="1593152359941">
+    <state width="1899" height="222" key="GridCell.Tab.0.bottom/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593199474275" />
+    <state width="1899" height="222" key="GridCell.Tab.0.center" timestamp="1593199474275">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="222" key="GridCell.Tab.0.center/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593152359941" />
-    <state width="1899" height="222" key="GridCell.Tab.0.left" timestamp="1593152359940">
+    <state width="1899" height="222" key="GridCell.Tab.0.center/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593199474275" />
+    <state width="1899" height="222" key="GridCell.Tab.0.left" timestamp="1593199474274">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="222" key="GridCell.Tab.0.left/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593152359940" />
-    <state width="1899" height="222" key="GridCell.Tab.0.right" timestamp="1593152359941">
+    <state width="1899" height="222" key="GridCell.Tab.0.left/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593199474274" />
+    <state width="1899" height="222" key="GridCell.Tab.0.right" timestamp="1593199474275">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="222" key="GridCell.Tab.0.right/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593152359941" />
+    <state width="1899" height="222" key="GridCell.Tab.0.right/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593199474275" />
     <state x="461" y="163" key="SettingsEditor" timestamp="1592868929629">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -170,23 +170,8 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/scripts/main.py</url>
-          <line>647</line>
+          <line>650</line>
           <option name="timeStamp" value="15" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/scripts/main.py</url>
-          <line>336</line>
-          <option name="timeStamp" value="26" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/scripts/main.py</url>
-          <line>93</line>
-          <option name="timeStamp" value="31" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/scripts/main.py</url>
-          <line>50</line>
-          <option name="timeStamp" value="32" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/scripts/settings.py</url>
@@ -202,6 +187,46 @@
           <url>file://$PROJECT_DIR$/scripts/settings.py</url>
           <line>53</line>
           <option name="timeStamp" value="36" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>599</line>
+          <option name="timeStamp" value="38" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>603</line>
+          <option name="timeStamp" value="39" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>607</line>
+          <option name="timeStamp" value="40" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>609</line>
+          <option name="timeStamp" value="42" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>611</line>
+          <option name="timeStamp" value="43" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>613</line>
+          <option name="timeStamp" value="44" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/settings.py</url>
+          <line>81</line>
+          <option name="timeStamp" value="45" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/scripts/main.py</url>
+          <line>138</line>
+          <option name="timeStamp" value="52" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

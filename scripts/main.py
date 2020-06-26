@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from settings import *
-import pandas as pd
 from datetime import datetime
 import uuid
 
-id_region = REGION[0]
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
 
 # Functions
@@ -72,7 +70,7 @@ def area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, an
     mfl_zr = cortar_region(anp_zr, REGION[1])
 
     anp_teu = arcpy.Merge_management([mfl_acr, mfl_def, mfl_pri, mfl_amr, mfl_zr],
-                                     os.path.join(SCRATCH, os.path.join(SCRATCH, "anp_teu")))
+                                     os.path.join(SCRATCH, "anp_teu"))
     # feature_clip = cortar_region(anp_teu, REGION[1])
     fieldname1 = "anp_nomb"
     fieldname2 = "anp_cate"
@@ -91,7 +89,7 @@ def area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, an
     return table_anp
 
 def recursos_turisticos(feature, red_vial_pol):
-    sql = "DPTO = 'San Martin'"
+    sql = "DPTO = 'Amazonas'"
     fieldname = "P_RECTURIS"
     mfl_turis = arcpy.MakeFeatureLayer_management(feature, "mfl_turis", sql)
     buffer_turis = arcpy.Buffer_analysis(in_features=mfl_turis, out_feature_class=os.path.join(SCRATCH, "buffer_turis_{}".format(REGION[0])),
@@ -138,18 +136,18 @@ def recursos_turisticos(feature, red_vial_pol):
     return table_tur
 
 def bosque_vulnerable(feature, red_vial_pol):
-    sql = "Riesgo in ('MUY ALTO', 'ALTO', 'MEDIO')"
+    sql = "VULNERABILIDAD in ('MUY ALTO', 'ALTO', 'MEDIO')"
     mfl_bv = arcpy.MakeFeatureLayer_management(feature,"mfl_bv",sql)
 
-    intersect_bv = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_bv, ""]], 
+    intersect_bv = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_bv, ""]],
                                                 out_feature_class=os.path.join(SCRATCH, "intersect_bv_{}".format(REGION[0])),
-                                                join_attributes="ALL", 
+                                                join_attributes="ALL",
                                                 cluster_tolerance="", output_type="INPUT")
-    dissol_isc_bv = arcpy.Dissolve_management(in_features=intersect_bv, 
+    dissol_isc_bv = arcpy.Dissolve_management(in_features=intersect_bv,
                                                 out_feature_class=os.path.join(SCRATCH, "dissol_isc_bv_{}".format(REGION[0])),
-                                                dissolve_field=["ID_RV", "AREA_B5KM"], 
-                                                statistics_fields=[], 
-                                                multi_part="MULTI_PART", 
+                                                dissolve_field=["ID_RV", "AREA_B5KM"],
+                                                statistics_fields=[],
+                                                multi_part="MULTI_PART",
                                                 unsplit_lines="DISSOLVE_LINES")
     arcpy.AddField_management(dissol_isc_bv, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_bv, "PNTBV", "DOUBLE")
@@ -168,16 +166,16 @@ def bosque_vulnerable(feature, red_vial_pol):
 def restauracion(feature, red_vial_pol):
     mfl_roam = arcpy.MakeFeatureLayer_management(feature,"mfl_roam")
 
-    intersect_roam = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_roam, ""]], 
+    intersect_roam = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_roam, ""]],
                                                 out_feature_class=os.path.join(SCRATCH, "intersect_roam_{}".format(REGION[0])),
-                                                join_attributes="ALL", 
+                                                join_attributes="ALL",
                                                 cluster_tolerance="", output_type="INPUT")
 
-    dissol_isc_roam = arcpy.Dissolve_management(in_features=intersect_roam, 
+    dissol_isc_roam = arcpy.Dissolve_management(in_features=intersect_roam,
                                                 out_feature_class=os.path.join(SCRATCH, "dissol_isc_roam_{}".format(REGION[0])),
-                                                dissolve_field=["ID_RV", "AREA_B5KM"], 
-                                                statistics_fields=[], 
-                                                multi_part="MULTI_PART", 
+                                                dissolve_field=["ID_RV", "AREA_B5KM"],
+                                                statistics_fields=[],
+                                                multi_part="MULTI_PART",
                                                 unsplit_lines="DISSOLVE_LINES")
 
     arcpy.AddField_management(dissol_isc_roam, "AREA_GEO", "DOUBLE")
@@ -214,13 +212,13 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
 
     intersect_bs = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
                                             out_feature_class=os.path.join(SCRATCH, "intersect_bs"),
-                                            join_attributes="ALL", cluster_tolerance="", 
+                                            join_attributes="ALL", cluster_tolerance="",
                                             output_type="INPUT")
 
-    dissol_bs = arcpy.Dissolve_management(in_features=intersect_bs, 
+    dissol_bs = arcpy.Dissolve_management(in_features=intersect_bs,
                                             out_feature_class=os.path.join(SCRATCH, "dissol_bs"),
-                                            dissolve_field=["ID_RV", "AREA_B5KM", "PUNT_BRECHAS"], 
-                                            statistics_fields=[], multi_part="MULTI_PART", 
+                                            dissolve_field=["ID_RV", "AREA_B5KM", "PUNT_BRECHAS"],
+                                            statistics_fields=[], multi_part="MULTI_PART",
                                             unsplit_lines="DISSOLVE_LINES")
 
     arcpy.AddField_management(dissol_bs, "AREA_GEO", "DOUBLE")
@@ -261,12 +259,12 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
 
     intersect_ea = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
                                             out_feature_class=os.path.join(SCRATCH, "intersect_ea"),
-                                            join_attributes="ALL", 
+                                            join_attributes="ALL",
                                             cluster_tolerance="", output_type="INPUT")
-    dissol_ea = arcpy.Dissolve_management(in_features=intersect_ea, 
+    dissol_ea = arcpy.Dissolve_management(in_features=intersect_ea,
                                             out_feature_class=os.path.join(SCRATCH, "dissol_ea"),
-                                            dissolve_field=["ID_RV", "AREA_B5KM", "P_ESTAD"], 
-                                            statistics_fields=[], multi_part="MULTI_PART", 
+                                            dissolve_field=["ID_RV", "AREA_B5KM", "P_ESTAD"],
+                                            statistics_fields=[], multi_part="MULTI_PART",
                                             unsplit_lines="DISSOLVE_LINES")
 
     arcpy.AddField_management(dissol_ea, "AREA_GEO", "DOUBLE")
@@ -284,17 +282,25 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
     return table_ea
 
 def habitante_ccpp(feature, red_vial_pol):
-    mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp")
+    sql = sql_region
+    # mfl_ccpp = arcpy.MakeFeatureLayer_management(feature, "ccpp", sql)
+    print(os.path.join(SCRATCH, "ccpp"))
+    mfl_ccpp = arcpy.Select_analysis(feature, os.path.join(SCRATCH, "ccpp"), sql)
     arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE")
 
-    with arcpy.da.UpdateCursor(mfl_ccpp, ["POB__2017_","REPREPOBLA"]) as cursor:
+    with arcpy.da.UpdateCursor(mfl_ccpp, ["POB_2017","REPREPOBLA"]) as cursor:
         for x in cursor:
             x[1] = x[0] / POB_REGION
             cursor.updateRow(x)
     del cursor
+    # intersect_ccpp = arcpy.Intersect_analysis(in_features=[[mfl_ccpp, ""], [red_vial_pol, ""]],
+    #                                           out_feature_class=os.path.join(SCRATCH, "intersect_ccpp"))
     intersect_ccpp = arcpy.Intersect_analysis(in_features=[[mfl_ccpp, ""], [red_vial_pol, ""]],
-                                                 out_feature_class="in_memory\\intersect_ccpp",
-                                                 join_attributes="ALL")
+                                              out_feature_class=os.path.join(SCRATCH, "intersect_ccpp"),
+                                              join_attributes="ALL",
+                                              cluster_tolerance="",
+                                              output_type="INPUT")
+    # intersect_ccpp = os.path.join(SCRATCH, "intersect_ccpp")
     dissol_ccpp = arcpy.Dissolve_management(in_features=intersect_ccpp,
                                             out_feature_class=os.path.join(SCRATCH, "dissol_ccpp_{}".format(REGION[0])),
                                             dissolve_field=["ID_RV"], statistics_fields=[["REPREPOBLA", "SUM"]],
@@ -318,7 +324,7 @@ def cobertura_agricola_1(feature, distrito):
 
 def cobertura_agricola_2(feature, red_vial_pol):
     cob_agricola_intersect2 = arcpy.Intersect_analysis(in_features=[[feature, ""], [red_vial_pol, ""]],
-                             out_feature_class=os.path.join(SCRATCH,"cob_agricola_intersect2"), 
+                             out_feature_class=os.path.join(SCRATCH,"cob_agricola_intersect2"),
                              join_attributes="ALL",
                              cluster_tolerance="",
                              output_type="INPUT")
@@ -357,8 +363,8 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     arcpy.AddMessage("cobertura_erase")
 
     cobertura_union = arcpy.Union_analysis(in_features=[[dissol_bosque, ""], [cobertura_erase, ""]],
-                                           out_feature_class=os.path.join(SCRATCH,"cobertura_union"),
-                                           join_attributes="ALL", cluster_tolerance="", gaps="GAPS")
+                                           out_feature_class=os.path.join(SCRATCH, "cobertura_union"),
+                                           join_attributes="ALL")
     arcpy.AddMessage("cobertura_union")
 
     cobertura_dissol = arcpy.Dissolve_management(in_features=cobertura_union, out_feature_class=os.path.join(SCRATCH,"cobertura_dissol"),
@@ -419,7 +425,6 @@ def dictb(f_in, tb, *args):
 
     output: cursor--> dicionario con key :"ID_RV" y values : args
     """
-
     for field in args:
         print(field)
         if field.startswith("MAX"):
@@ -444,7 +449,6 @@ def clasif(vx,v1,v2,neg=None):
     v2 : punto de control 2
     neg: parametro que evalua si se requiero considerar el negativo como clase para valores menores a cero
     """
-
     if neg and vx<0:
         m = "NEGATIVO"
     elif vx < v1 :
@@ -537,19 +541,6 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
     print("UPDATE 1 finish")
 
-
-    # dic_fields={
-    # 'LENGTH_GEO' : ["LENGTH_GEO", "DOUBLE", "", "LENGTH_GEO"],
-    # 'EVALUACION' : ["EVALUACION", "DOUBLE", "", "Evauacion Final"],
-    # 'EVACLASE'   : ["EVACLASE", "TEXT", 10, "Clasificacion Evaluacion Final"],
-    # 'AMBIENTAL'  : ["AMBIENTAL", "DOUBLE", "", "Ambiental"],
-    # 'AMBCLASE'   : ["AMBCLASE", "TEXT", 10, "Evaluacion Ambiental Clasificacion"], 
-    # 'ECONOMICO'  : ["ECONOMICO", "DOUBLE", "", "Economico"],
-    # 'ECOCLASE'   : ["ECOCLASE", "TEXT", 10, "Evaluacion Economica Clasificacion"],
-    # 'SOCIAL'     : ["SOCIAL", "DOUBLE", "", "Social"],
-    # 'SOCCLASE'   : ["SOCCLASE", "TEXT", 10, "Evaluacion Social Clasificacion"]
-    #     }
-
     list_fields=[
     ["LENGTH_GEO", "DOUBLE", "", "LENGTH_GEO"],                     #12
     ["EVALUACION", "DOUBLE", "", "Evauacion Final"],                #13
@@ -603,7 +594,7 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
             i[20] = cls_soci
             cursorU.updateRow(i)
     del cursor
-    arcpy.CopyFeatures_management(feature, os.path.join(PATH_GDB, "RVV_EVALUACIO_{}".format(REGION[1])))
+    arcpy.CopyFeatures_management(feature, os.path.join(PATH_GDB, "RVV_EVALUACION_{}".format(REGION[1])))
     print("UPDATE 2 finish")
 
 def process():
@@ -611,34 +602,45 @@ def process():
     arcpy.AddMessage("El proceso inicia - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     fc_distritos = copy_distritos(distritos)
     # red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal, via_local)
-    red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal)
-    arcpy.AddMessage("Se generaron las redes viales (lineas y poligonos) - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # red_vial_line = os.path.join(SCRATCH, "mfl_rv - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    # red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_SM - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal)
+    # arcpy.AddMessage("Se generaron las redes viales (lineas y poligonos) - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    red_vial_line = os.path.join(SCRATCH, "mfl_rv")
+    red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_{}".format(REGION[0]))
     fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
     arcpy.AddMessage("Se realizo la primera parte del proceso de cobertura agricola - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_anp = area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, anp_zr)
-    arcpy.AddMessage("Termino proceso de ANP - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
-    arcpy.AddMessage("Termino proceso de Recursos turisticos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
-    arcpy.AddMessage("Termino proceso de Bosques vulnerables - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_roam = restauracion(fc_roam, red_vial_pol)
-    arcpy.AddMessage("Termino proceso de Restauracion - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
-    arcpy.AddMessage("Termino proceso de Brechas sociales - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
-    arcpy.AddMessage("Termino proceso de Estadistica agraria - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_anp = area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, anp_zr)
+    # arcpy.AddMessage("Termino proceso de ANP - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_turis = recursos_turisticos(fc_turis, red_vial_pol)
+    # arcpy.AddMessage("Termino proceso de Recursos turisticos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_bv = bosque_vulnerable(bosq_vuln, red_vial_pol)
+    # arcpy.AddMessage("Termino proceso de Bosques vulnerables - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_roam = restauracion(fc_roam, red_vial_pol)
+    # arcpy.AddMessage("Termino proceso de Restauracion - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_bs = brechas_sociales(fc_distritos, red_vial_pol, tbp_brechas)
+    # arcpy.AddMessage("Termino proceso de Brechas sociales - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_ea = estadistica_agraria(fc_distritos,red_vial_pol, tbp_estagr)
+    # arcpy.AddMessage("Termino proceso de Estadistica agraria - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     tabla_cob_agric = cobertura_agricola_2(fc_cob_agricola_1, red_vial_pol)
     arcpy.AddMessage("Termino proceso de Cobertura agricola - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
-    arcpy.AddMessage("Termino proceso de Polos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
-    arcpy.AddMessage("Termino Zonas degradadas - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
-    arcpy.AddMessage("Termino el proceso de habitantes - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # cob_agri_sinbosque, bosque_nobosque, tabla_polos = polos_intensificacion(bosque, fc_cob_agricola_1, red_vial_pol)
+    # arcpy.AddMessage("Termino proceso de Polos - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_zd = zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol)
+    # arcpy.AddMessage("Termino Zonas degradadas - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
+    # arcpy.AddMessage("Termino el proceso de habitantes - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
-    jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea, tabla_bs, tabla_bv, tabla_ccpp)
+    # tabla_anp = os.path.join(PATH_GDB, "RV_{}_ANP".format(REGION[0]))
+    # tabla_turis = os.path.join(PATH_GDB, "RV_{}_TUR".format(REGION[0]))
+    # tabla_zd = os.path.join(PATH_GDB, "tb_{}_zd".format(REGION[0]))
+    # tabla_roam = os.path.join(PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
+    # tabla_cob_agric = os.path.join(PATH_GDB, "tb_cagri_{}".format(REGION[0]))
+    # tabla_polos = os.path.join(PATH_GDB, "tb_polos_{}".format(REGION[0]))
+    # tabla_ea = os.path.join(PATH_GDB, "RV_{}_EA".format(REGION[0]))
+    # tabla_bs = os.path.join(PATH_GDB, "RV_{}_BS".format(REGION[0]))
+    # tabla_bv = os.path.join(PATH_GDB, "RV_{}_BV".format(REGION[0]))
+    # tabla_ccpp = os.path.join(PATH_GDB, "RV_{}_CCPP".format(REGION[0]))
+    #
+    # jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea, tabla_bs, tabla_bv, tabla_ccpp)
 
     end_time = datetime.now()
     arcpy.AddMessage("El proceso finaliza - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
