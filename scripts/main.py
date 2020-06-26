@@ -22,15 +22,15 @@ def cortar_region(feature, region):
     clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region_{}".format(name_uuid)))
     return clip_region
 
-def red_vial(via_nacional, via_departamental, via_vecinal, via_local):
+def red_vial(via_nacional, via_departamental, via_vecinal):
     '''
     Devuelve las capas de lineas y poligonos a partir de la capa de vias con merge corregido
     '''
     mfl_vn = cortar_region(via_nacional, REGION[1])
     mfl_vd = cortar_region(via_departamental, REGION[1])
     mfl_vv = cortar_region(via_vecinal, REGION[1])
-    mfl_vl = cortar_region(via_local, REGION[1])
-    vias_merge = arcpy.Merge_management([mfl_vn, mfl_vd, mfl_vv, mfl_vl],
+    # mfl_vl = cortar_region(via_local, REGION[1])
+    vias_merge = arcpy.Merge_management([mfl_vn, mfl_vd, mfl_vv],
                                         os.path.join(SCRATCH, "vias_merge"))
     mfl_rv = arcpy.CopyFeatures_management(vias_merge, os.path.join(SCRATCH, "mfl_rv"))
     desc = arcpy.Describe(mfl_rv)
@@ -610,7 +610,8 @@ def process():
     start_time = datetime.now()
     arcpy.AddMessage("El proceso inicia - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     fc_distritos = copy_distritos(distritos)
-    red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal, via_local)
+    # red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal, via_local)
+    red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal)
     arcpy.AddMessage("Se generaron las redes viales (lineas y poligonos) - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     # red_vial_line = os.path.join(SCRATCH, "mfl_rv - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     # red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_SM - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
