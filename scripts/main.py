@@ -112,13 +112,15 @@ def recursos_turisticos(feature, red_vial_pol):
     isc_fc = intersect_turis.getOutput(0)
     arcpy.AddMessage("intersect_turis")
 
+    arcpy.AddField_management(isc_fc, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
-    with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", fieldname, "AREA_B5KM"]) as cursor:
+    with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", "AREA_GEO", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha/row[2]
+            row[1] = area_ha
+            row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
     arcpy.AddMessage("turis termino update")
@@ -330,10 +332,13 @@ def cobertura_agricola_2(feature, red_vial_pol):
                              output_type="INPUT")
     field = "P_CAGRI"
     arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
-    with arcpy.da.UpdateCursor(cob_agricola_intersect2, ["SHAPE@", "AREA_B5KM", "P_CAGRI"]) as cursor:
+    arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
+
+    with arcpy.da.UpdateCursor(cob_agricola_intersect2, ["SHAPE@", "AREA_B5KM", "P_CAGRI","AREA_GEO"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[2] = area_ha / row[1]
+            row[3] = area_ha
             cursor.updateRow(row)
     del cursor
     cob_agricola_dissol = arcpy.Dissolve_management(cob_agricola_intersect2, os.path.join(SCRATCH,"cob_agricola_dissol"),
@@ -341,7 +346,7 @@ def cobertura_agricola_2(feature, red_vial_pol):
                                                     statistics_fields=[[field, "SUM"]], multi_part="MULTI_PART",
                                                     unsplit_lines="DISSOLVE_LINES")
     table_cob_agricola = arcpy.TableToTable_conversion(cob_agricola_dissol, PATH_GDB,
-                                                       out_name="tb_cagri_{}".format(REGION[0]))
+                                                       out_name="RV_CAGRI_{}".format(REGION[0]))
     return table_cob_agricola
 
 def polos_intensificacion(feature, cobertura, red_vial_pol):
@@ -378,11 +383,13 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     field = "PNTPOLOS"
     polos_mfl = arcpy.Select_analysis(polos_intersect, os.path.join(SCRATCH, "polos_mfl"), sql_3)
     arcpy.AddField_management(polos_mfl, field, "DOUBLE")
+    arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
 
-    with arcpy.da.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field]) as cursor:
+    with arcpy.da.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field, "AREA_GEO"]) as cursor:
         for row in cursor:
             area_ha = row[0].getArea("GEODESIC", "HECTARES")
             row[2] = area_ha / row[1]
+            row[3] = area_ha
             cursor.updateRow(row)
     del cursor
 
@@ -391,7 +398,7 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
                                                    multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
     arcpy.AddMessage("cobertura_dissol_f")
     table_cob_agricola = arcpy.TableToTable_conversion(cobertura_dissol_f, PATH_GDB,
-                                                       out_name="tb_polos_{}".format(REGION[0]))
+                                                       out_name="RV_POLOS_{}".format(REGION[0]))
     return dissol_bosque, cobertura_erase, table_cob_agricola
 
 def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_vial_pol):
@@ -415,7 +422,7 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
     table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "tb_{}_zd".format(REGION[0]))
     return table_zd
 
-def dictb(f_in, tb, *args):
+def dictb(f_in, tb,area='', *args):
     """
     descripcion : funcion que agrega un campo a la capa de ingreso del tipo double
                 y crea un diccionario para la tabla indicada "tb" con los campos "args"
@@ -436,6 +443,8 @@ def dictb(f_in, tb, *args):
     idrv = "ID_RV"
     fields.append(idrv)
     fields.extend(list(args))
+    if area not in ('','#'):
+        fields.append("AREA_GEO")
 
     sql = "{} IS NOT NULL".format(idrv)
     cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb, fields, sql)}
@@ -467,48 +476,48 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     # Areas naturales anp
     fanp1 = "MAX_anp_nomb"
     fanp2 = "MAX_anp_cate"
-    c_anp = dictb(feature,tb1_anp, fanp1, fanp2)
+    c_anp = dictb(feature,tb1_anp,'', fanp1, fanp2)
     print(c_anp)
     print("c_anp")
 
     # Recursos turisticos turis
     ftur = "SUM_P_RECTURIS"
-    c_tur = dictb(feature,tb2_tur, ftur)
+    c_tur = dictb(feature,tb2_tur, area= 'si', ftur)
     print("c_tur")
 
     # Zona degradad
     fzdg = "PNT_ZDEGRA_SINCAGRO"
-    c_zdg = dictb(feature, tb3_zdg, fzdg)
+    c_zdg = dictb(feature, tb3_zdg, area= 'si', fzdg)
     print("c_zdg")
 
     # Restauracion ROAM
     fres = "PNTROAM"
-    c_res = dictb(feature, tb4_res, fres)
+    c_res = dictb(feature, tb4_res, area= 'si', fres)
     print("c_res")
 
     # Cobertura agricola
     fcagr = "SUM_P_CAGRI"
-    c_cagr = dictb(feature, tb5_cagr, fcagr)
+    c_cagr = dictb(feature, tb5_cagr, area= 'si', fcagr)
     print("c_cagr")
 
     # Polos
     fpol = "SUM_PNTPOLOS"
-    c_pol = dictb(feature, tb6_pol, fpol)
+    c_pol = dictb(feature, tb6_pol, area= 'si', fpol)
     print("c_pol")
 
     # Estadistica Agraria
     feag = "PNTESTAGRI"
-    c_eag = dictb(feature, tb7_eag, feag)
+    c_eag = dictb(feature, tb7_eag, area= 'si', feag)
     print("c_eag")
 
     # Brechas Sociales
     fbrs = "PNTBRECHAS"
-    c_brs = dictb(feature, tb8_brs, fbrs)
+    c_brs = dictb(feature, tb8_brs, area= 'si', fbrs)
     print("c_brs")
 
     # Bosques vulnerables
     fbvu = "PNTBV"
-    c_bvu = dictb(feature, tb9_bvu, fbvu)
+    c_bvu = dictb(feature, tb9_bvu, area= 'si', fbvu)
     print("c_bvu")
 
     # Habitantes por centro poblado
@@ -520,9 +529,30 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
     upd_fields = [idrv, fanp1, fanp2, ftur, fzdg, fres, fcagr, fpol, feag, fbrs, fbvu, fcpp]
     ##############  0 ,   1  ,  2   ,   3 ,  4  ,  5  ,   6  ,  7  ,  8  ,  9  ,  10 ,  11 #########
 
+
+    ##### Agregamos campos de área ########
+
+    area_fields=[
+    ["AREA_TUR", "DOUBLE", "", "Area Recurso Turistico ha"],          #12
+    ["AREA_ZDEGR", "DOUBLE", "", "Area Zonas Degradadas ha"],         #13
+    ["AREA_ROAM", "DOUBLE", "", "Area Restauracion ha"],              #14
+    ["AREA_CAGRI", "DOUBLE", "", "Area Cobertura agricola ha"],       #15
+    ["AREA_POLOS", "DOUBLE", "", "Area Polos de intensificacion ha"], #16
+    ["AREA_EAG", "DOUBLE", "", "Area Estadistica Agraria ha"],        #17
+    ["AREA_BRS", "DOUBLE", "", "Area Brechas Sociales ha"],           #18
+    ["AREA_BV", "DOUBLE", "", "Area Bosque Vulnerable ha"],           #19
+        ]
+
+    upd_area = []
+    upd_area.extend(upd_fields)
+
+    for x in area_fields:
+        upd_area.append(x[0])
+        arcpy.AddField_management(feature,x[0], x[1], "", "", x[2], x[3])
+
     sql = "{} IS NOT NULL".format(idrv)
 
-    with arcpy.da.UpdateCursor(feature, upd_fields, sql) as cursor:
+    with arcpy.da.UpdateCursor(feature, upd_area, sql) as cursor:
 
         for row in cursor:
             row[1] = c_anp.get(row[0])[0] if c_anp.get(row[0]) else "0"
@@ -536,6 +566,16 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
             row[9] = c_brs.get(row[0])[0] if c_brs.get(row[0]) else 0
             row[10] = c_bvu.get(row[0])[0] if c_bvu.get(row[0]) else 0
             row[11] = c_cpp.get(row[0])[0] if c_cpp.get(row[0]) else 0
+
+            #ahora los campos de area
+            row[12] = c_tur.get(row[0])[-1] if c_tur.get(row[0]) else 0
+            row[13] = c_zdg.get(row[0])[-1] if c_zdg.get(row[0]) else 0
+            row[14] = c_res.get(row[0])[-1] if c_res.get(row[0]) else 0
+            row[15] = c_cagr.get(row[0])[-1] if c_cagr.get(row[0]) else 0
+            row[16] = c_pol.get(row[0])[-1] if c_pol.get(row[0]) else 0
+            row[17] = c_eag.get(row[0])[-1] if c_eag.get(row[0]) else 0
+            row[18] = c_brs.get(row[0])[-1] if c_brs.get(row[0]) else 0
+            row[19] = c_bvu.get(row[0])[-1] if c_bvu.get(row[0]) else 0
             cursor.updateRow(row)
     del cursor
 
@@ -543,7 +583,7 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
     list_fields=[
     ["LENGTH_GEO", "DOUBLE", "", "LENGTH_GEO"],                     #12
-    ["EVALUACION", "DOUBLE", "", "Evauacion Final"],                #13
+    ["EVALUACION", "DOUBLE", "", "Evaluacion Final"],                #13
     ["EVACLASE", "TEXT", 10, "Clasificacion Evaluacion Final"],     #14
     ["AMBIENTAL", "DOUBLE", "", "Ambiental"],                       #15
     ["AMBCLASE", "TEXT", 10, "Evaluacion Ambiental Clasificacion"], #16
