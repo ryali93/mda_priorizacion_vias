@@ -4,6 +4,8 @@ from datetime import datetime
 import uuid
 
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
+mod_geom = "cf" #Calculatefield
+# mod_geom = "uc" #Calculatefield
 
 # Functions
 def merge_capas(path_salida, *args):
@@ -53,12 +55,16 @@ def red_vial(via_nacional, via_departamental, via_vecinal):
     arcpy.AddField_management(mfl_buffer, field_area, "DOUBLE")
 
     # Se calcula el area del buffer 5km para read vial
-    with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
-        for row in cursor:
-            # area en hectareas
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
-            cursor.updateRow(row)
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(mfl_buffer, field_area, "!shape.area@hectares!","PYTHON_9.3")
+        
+    else:
+        with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
+            for row in cursor:
+                # area en hectareas
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
+                cursor.updateRow(row)
     del cursor
     return mfl_rv, mfl_buffer
 
@@ -116,10 +122,16 @@ def recursos_turisticos(feature, red_vial_pol):
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(isc_fc, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", "AREA_GEO", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else :
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -154,10 +166,16 @@ def bosque_vulnerable(feature, red_vial_pol):
     arcpy.AddField_management(dissol_isc_bv, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_bv, "PNTBV", "DOUBLE")
 
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_isc_bv, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(dissol_isc_bv, ["SHAPE@","AREA_GEO","PNTBV","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else :
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -183,10 +201,16 @@ def restauracion(feature, red_vial_pol):
     arcpy.AddField_management(dissol_isc_roam, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_roam, "PNTROAM", "DOUBLE")
 
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_isc_roam, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(dissol_isc_roam, ["SHAPE@","AREA_GEO","PNTROAM","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else :
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -226,10 +250,16 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
     arcpy.AddField_management(dissol_bs, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_bs, "PNTBRECHAS", "DOUBLE")
 
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_bs, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(dissol_bs, ["SHAPE@","AREA_GEO","PNTBRECHAS","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else:
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -272,10 +302,16 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
     arcpy.AddField_management(dissol_ea, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_ea, "PNTESTAGRI", "DOUBLE")
 
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_ea, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(dissol_ea, ["SHAPE@","AREA_GEO","PNTESTAGRI","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else:
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -332,13 +368,20 @@ def cobertura_agricola_2(feature, red_vial_pol):
                              output_type="INPUT")
     field = "P_CAGRI"
     arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
-    arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
+    arcpy.AddField_management(cob_agricola_intersect2, "AREA_GEO", "DOUBLE")
+
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(cob_agricola_intersect2, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
 
     with arcpy.da.UpdateCursor(cob_agricola_intersect2, ["SHAPE@", "AREA_B5KM", "P_CAGRI","AREA_GEO"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC", "HECTARES")
+            if mod_geom == 'cf':
+                area_ha = row[3]
+            else:
+                area_ha = row[0].getArea("GEODESIC", "HECTARES")
+                row[3] = area_ha
             row[2] = area_ha / row[1]
-            row[3] = area_ha
+            
             cursor.updateRow(row)
     del cursor
     cob_agricola_dissol = arcpy.Dissolve_management(cob_agricola_intersect2, os.path.join(SCRATCH,"cob_agricola_dissol"),
@@ -385,11 +428,17 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     arcpy.AddField_management(polos_mfl, field, "DOUBLE")
     arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
 
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(polos_mfl, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field, "AREA_GEO"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC", "HECTARES")
-            row[2] = area_ha / row[1]
-            row[3] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[3]
+            else:
+                area_ha = row[0].getArea("GEODESIC", "HECTARES")
+                row[3] = area_ha
+            row[2] = area_ha / row[1]            
             cursor.updateRow(row)
     del cursor
 
@@ -411,10 +460,16 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
     arcpy.AddField_management(dissol_zd, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_zd, "PNT_ZDEGRA_SINCAGRO", "DOUBLE")
 
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_zd, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+
     with arcpy.da.UpdateCursor(dissol_zd, ["SHAPE@", "AREA_GEO", "PNT_ZDEGRA_SINCAGRO", "AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC", "HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else:
+                area_ha = row[0].getArea("GEODESIC", "HECTARES")
+                row[1] = area_ha
             row[2] = area_ha / row[3]
             cursor.updateRow(row)
     del cursor
