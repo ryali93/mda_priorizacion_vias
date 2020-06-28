@@ -693,21 +693,50 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
     print("Fields agregados")
 
+    list_val_eval=[]
+    list_val_ambi=[]
+    list_val_econ=[]
+    list_val_soci=[]
+
+
+    with arcpy.da.SearchCursor(feature, eval_upd, sql ) as cursor:
+        for i in cursor:
+            val_eval = i[3] +i[4] +i[5] +i[6] +i[7] +i[8] +i[9] -i[10] +i[11]
+            list_val_eval.append(val_eval)
+
+            val_ambi = i[5] -i[10]+ i[4]
+            list_val_ambi.append(val_ambi)
+
+            val_econ = i[3] +i[6] +i[7] + i[8]
+            list_val_econ.append(val_econ)
+
+            val_soci = i[9] + i[11]
+            list_val_soci.append(val_soci)
+
+    del cursor
+    
+    bp_eval = (max(list_val_eval)- min (list_val_eval))/2
+    bp_ambi = (max(list_val_ambi)- min (list_val_ambi))/2
+    bp_econ = (max(list_val_econ)- min (list_val_econ))/2
+    bp_soci = (max(list_val_soci)- min (list_val_soci))/2
+
     #Comenzamos con el actualizado final de campos
     with arcpy.da.UpdateCursor(feature, eval_upd, sql ) as cursorU:
 
         for i in cursorU:
             val_eval = i[3] +i[4] +i[5] +i[6] +i[7] +i[8] +i[9] -i[10] +i[11]
-            cls_eval = clasif(val_eval, 2.1, 4)
+            # cls_eval = clasif(val_eval, 2.1, 4)
+            cls_eval = clasif(val_eval, bp_eval, 2*bp_eval)
 
             val_ambi = i[5] -i[10]+ i[4]
-            cls_ambi = clasif(val_ambi, 0.3, 0.7, 'si')
+            # cls_ambi = clasif(val_ambi, 0.3, 0.7, 'si')
+            cls_ambi = clasif(val_ambi, bp_ambi, 2*bp_ambi, 'si')
 
             val_econ = i[3] +i[6] +i[7] + i[8]
-            cls_econ = clasif(val_econ, 1.5, 2.7)
+            cls_econ = clasif(val_econ, bp_econ, 2*bp_econ)
 
             val_soci = i[9] + i[11]
-            cls_soci = clasif(val_soci, 1.5, 2.7)
+            cls_soci = clasif(val_soci, bp_soci, 2*bp_soci)
 
             #campo area
             i[12] = i[21].getLength("GEODESIC", "KILOMETERS")
