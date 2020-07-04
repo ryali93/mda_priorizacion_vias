@@ -4,6 +4,8 @@ from datetime import datetime
 import uuid
 
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
+mod_geom = "cf" #Calculatefield
+# mod_geom = "uc" #UpdateCursor
 
 # Functions
 def merge_capas(path_salida, *args):
@@ -20,6 +22,32 @@ def cortar_region(feature, region):
     clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region_{}".format(name_uuid)))
     return clip_region
 
+def hidefields(lyr,*args):
+    """
+    funcion para ocultar campos de una capa
+    lyr = capa a ser procesada
+    args = nombre de los campos excepcion que no se ocultaran
+    output = mfl con todos los campos apagados a excepcion de 'args'
+    """
+    name = os.path.basename(lyr)
+    desc = arcpy.Describe(lyr)
+    field_info = desc.fieldInfo
+    fields = [x.name for x in desc.fields]
+    # List of fields to hide
+    # desc.OIDFieldName is the name of the 'FID' field
+    fields.remove(desc.OIDFieldName)
+    # campos a mantenerse en el lyr
+    if args:
+        for f in args:
+            fields.remove(f)
+    # los campos que se ocultaran
+    fieldsToHide = fields
+    for i in range(0, field_info.count):
+        if field_info.getFieldName(i) in fieldsToHide:
+            field_info.setVisible(i, "HIDDEN")
+    outlyr = arcpy.MakeFeatureLayer_management(lyr, name, "", "", field_info)
+    return outlyr
+
 def red_vial(via_nacional, via_departamental, via_vecinal):
     '''
     Devuelve las capas de lineas y poligonos a partir de la capa de vias con merge corregido
@@ -30,7 +58,10 @@ def red_vial(via_nacional, via_departamental, via_vecinal):
     # mfl_vl = cortar_region(via_local, REGION[1])
     vias_merge = arcpy.Merge_management([mfl_vn, mfl_vd, mfl_vv],
                                         os.path.join(SCRATCH, "vias_merge"))
-    mfl_rv = arcpy.CopyFeatures_management(vias_merge, os.path.join(SCRATCH, "mfl_rv"))
+    vias_clip = arcpy.Intersect_analysis([vias_merge, distritos],
+                                         os.path.join(SCRATCH, "vias_clip"), 'ALL', '#',
+                                         'INPUT')
+    mfl_rv = arcpy.CopyFeatures_management(vias_clip, os.path.join(SCRATCH, "mfl_rv"))
     desc = arcpy.Describe(mfl_rv)
     id_dep = REGION[0]
     fieldname = "ID_RV"
@@ -53,12 +84,16 @@ def red_vial(via_nacional, via_departamental, via_vecinal):
     arcpy.AddField_management(mfl_buffer, field_area, "DOUBLE")
 
     # Se calcula el area del buffer 5km para read vial
-    with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
-        for row in cursor:
-            # area en hectareas
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
-            cursor.updateRow(row)
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(mfl_buffer, field_area, "!shape.area@hectares!","PYTHON_9.3")
+
+    else:
+        with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
+            for row in cursor:
+                # area en hectareas
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
+                cursor.updateRow(row)
     del cursor
     return mfl_rv, mfl_buffer
 
@@ -89,7 +124,7 @@ def area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, an
     return table_anp
 
 def recursos_turisticos(feature, red_vial_pol):
-    sql = "DPTO = 'Amazonas'"
+    sql = "DPTO = '{}'".format(string.capwords(REGION[1]))
     fieldname = "P_RECTURIS"
     mfl_turis = arcpy.MakeFeatureLayer_management(feature, "mfl_turis", sql)
     buffer_turis = arcpy.Buffer_analysis(in_features=mfl_turis, out_feature_class=os.path.join(SCRATCH, "buffer_turis_{}".format(REGION[0])),
@@ -111,15 +146,19 @@ def recursos_turisticos(feature, red_vial_pol):
                                                cluster_tolerance="", output_type="INPUT")
     isc_fc = intersect_turis.getOutput(0)
     arcpy.AddMessage("intersect_turis")
-
     arcpy.AddField_management(isc_fc, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(isc_fc, fieldname, "DOUBLE")
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(isc_fc, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", "AREA_GEO", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else :
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -153,11 +192,15 @@ def bosque_vulnerable(feature, red_vial_pol):
                                                 unsplit_lines="DISSOLVE_LINES")
     arcpy.AddField_management(dissol_isc_bv, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_bv, "PNTBV", "DOUBLE")
-
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_isc_bv, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(dissol_isc_bv, ["SHAPE@","AREA_GEO","PNTBV","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else :
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -182,11 +225,15 @@ def restauracion(feature, red_vial_pol):
 
     arcpy.AddField_management(dissol_isc_roam, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_roam, "PNTROAM", "DOUBLE")
-
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_isc_roam, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(dissol_isc_roam, ["SHAPE@","AREA_GEO","PNTROAM","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else :
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -197,14 +244,14 @@ def restauracion(feature, red_vial_pol):
 def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
     mfl_dist = arcpy.MakeFeatureLayer_management(distritos,"mfl_dist")
 
-    ubigeo = "IDDIST"
+    ubigeo = "UBIGEO"
     brecha = "PUNT_BRECHAS"
-    arcpy.AddField_management(mfl_dist, brecha , "DOUBLE")
+    arcpy.AddField_management(mfl_dist, brecha, "DOUBLE")
 
-    df_brecha = {str(int(x[0])).zfill(6):x[1] for x in arcpy.da.SearchCursor(tbpuntaje,["UBIGEO",brecha])}
+    df_brecha = {str(int(x[0])).zfill(6):x[1] for x in arcpy.da.SearchCursor(tbpuntaje, [ubigeo, brecha])}
 
     # Actualizamos el campo brecha con los valores de la tabla de puntaje
-    with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,brecha]) as cursor:
+    with arcpy.da.UpdateCursor(mfl_dist, [ubigeo, brecha]) as cursor:
         for row in cursor:
             if df_brecha.get(row[0]):
                 respuesta = df_brecha.get(row[0])
@@ -225,11 +272,15 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
 
     arcpy.AddField_management(dissol_bs, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_bs, "PNTBRECHAS", "DOUBLE")
-
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_bs, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(dissol_bs, ["SHAPE@","AREA_GEO","PNTBRECHAS","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else:
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -241,14 +292,14 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
 
     mfl_dist = arcpy.MakeFeatureLayer_management(distritos,"mfl_dist")
 
-    ubigeo = "IDDIST"
+    ubigeo = "UBIGEO"
     estad_agr = "P_ESTAD"
 
     arcpy.AddField_management(mfl_dist, estad_agr , "TEXT","", "", 125)
 
     filtro = "UBIGEO is not NULL"
 
-    df_estad_agr = {str(int(x[0])).zfill(6):x[1] for x in arcpy.da.SearchCursor(tbpuntaje,["UBIGEO",estad_agr], filtro)}
+    df_estad_agr = {str(int(x[0])).zfill(6):x[1] for x in arcpy.da.SearchCursor(tbpuntaje,[ubigeo, estad_agr], filtro)}
 
     # Actualizamos el campo P_ESTAD con los valores de la tabla de puntaje
     with arcpy.da.UpdateCursor(mfl_dist, [ubigeo,estad_agr]) as cursor:
@@ -271,11 +322,15 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
 
     arcpy.AddField_management(dissol_ea, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_ea, "PNTESTAGRI", "DOUBLE")
-
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_ea, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(dissol_ea, ["SHAPE@","AREA_GEO","PNTESTAGRI","AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC","HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else:
+                area_ha = row[0].getArea("GEODESIC","HECTARES")
+                row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
     del cursor
@@ -289,20 +344,20 @@ def habitante_ccpp(feature, red_vial_pol):
     print(os.path.join(SCRATCH, "ccpp"))
     mfl_ccpp = arcpy.Select_analysis(feature, os.path.join(SCRATCH, "ccpp"), sql)
     arcpy.AddField_management(mfl_ccpp, "REPREPOBLA", "DOUBLE")
-
     with arcpy.da.UpdateCursor(mfl_ccpp, ["POB_2017","REPREPOBLA"]) as cursor:
         for x in cursor:
             x[1] = x[0] / POB_REGION
             cursor.updateRow(x)
     del cursor
-    # intersect_ccpp = arcpy.Intersect_analysis(in_features=[[mfl_ccpp, ""], [red_vial_pol, ""]],
-    #                                           out_feature_class=os.path.join(SCRATCH, "intersect_ccpp"))
-    intersect_ccpp = arcpy.Intersect_analysis(in_features=[[mfl_ccpp, ""], [red_vial_pol, ""]],
-                                              out_feature_class=os.path.join(SCRATCH, "intersect_ccpp"),
-                                              join_attributes="ALL",
-                                              cluster_tolerance="",
-                                              output_type="INPUT")
-    # intersect_ccpp = os.path.join(SCRATCH, "intersect_ccpp")
+    intersect_ccpp = arcpy.Intersect_analysis(in_features=[mfl_ccpp, red_vial_pol],
+                                              out_feature_class=os.path.join(SCRATCH, "intersect_ccpp_{}".format(REGION[0])))
+    # --------------------------------------
+    # intersect_ccpp = arcpy.Intersect_analysis(
+    #     in_features=["C:\\Users\\Jerzy Virhuez\\AppData\\Local\\Temp\\scratch.gdb\\ccpp",
+    #                  "C:\\Users\\Jerzy Virhuez\\AppData\\Local\\Temp\\scratch.gdb\\B5KM_RV_UCA"],
+    #     out_feature_class="C:\\Users\\Jerzy Virhuez\\AppData\\Local\\Temp\\scratch.gdb\\intersect_ccpp_UCA")
+    # ---------------------------------------------------------
+    intersect_ccpp = os.path.join(SCRATCH, "intersect_ccpp_{}".format(REGION[0]))
     dissol_ccpp = arcpy.Dissolve_management(in_features=intersect_ccpp,
                                             out_feature_class=os.path.join(SCRATCH, "dissol_ccpp_{}".format(REGION[0])),
                                             dissolve_field=["ID_RV"], statistics_fields=[["REPREPOBLA", "SUM"]],
@@ -332,13 +387,18 @@ def cobertura_agricola_2(feature, red_vial_pol):
                              output_type="INPUT")
     field = "P_CAGRI"
     arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
-    arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
-
+    arcpy.AddField_management(cob_agricola_intersect2, "AREA_GEO", "DOUBLE")
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(cob_agricola_intersect2, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(cob_agricola_intersect2, ["SHAPE@", "AREA_B5KM", "P_CAGRI","AREA_GEO"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC", "HECTARES")
+            if mod_geom == 'cf':
+                area_ha = row[3]
+            else:
+                area_ha = row[0].getArea("GEODESIC", "HECTARES")
+                row[3] = area_ha
             row[2] = area_ha / row[1]
-            row[3] = area_ha
+
             cursor.updateRow(row)
     del cursor
     cob_agricola_dissol = arcpy.Dissolve_management(cob_agricola_intersect2, os.path.join(SCRATCH,"cob_agricola_dissol"),
@@ -376,20 +436,25 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
                                                  multi_part="MULTI_PART", unsplit_lines="DISSOLVE_LINES")
     arcpy.AddMessage("cobertura_dissol")
 
-    polos_intersect = arcpy.Intersect_analysis(in_features=[[cobertura_dissol, ""], [pot_product, ""], [red_vial_pol, ""]],
-                                               out_feature_class=os.path.join(SCRATCH,"polos_intersect1"))
+    polos_mfl = arcpy.Intersect_analysis(in_features=[[cobertura_dissol, ""], [pot_product, ""], [red_vial_pol, ""]],
+                                         out_feature_class=os.path.join(SCRATCH,"polos_intersect1"))
+    # polos_mfl = os.path.join(SCRATCH, "polos_intersect1")
     arcpy.AddMessage("polos_intersect")
     sql_3 = "PP = 'AP-AC-FL' Or PP = 'AP-AC' Or PP = 'AP-AC'"
     field = "PNTPOLOS"
-    polos_mfl = arcpy.Select_analysis(polos_intersect, os.path.join(SCRATCH, "polos_mfl"), sql_3)
+    # polos_mfl = arcpy.Select_analysis(polos_intersect, os.path.join(SCRATCH, "polos_mfl"), sql_3)
     arcpy.AddField_management(polos_mfl, field, "DOUBLE")
     arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
-
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(polos_mfl, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field, "AREA_GEO"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC", "HECTARES")
+            if mod_geom == 'cf':
+                area_ha = row[3]
+            else:
+                area_ha = row[0].getArea("GEODESIC", "HECTARES")
+                row[3] = area_ha
             row[2] = area_ha / row[1]
-            row[3] = area_ha
             cursor.updateRow(row)
     del cursor
 
@@ -410,11 +475,15 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
 
     arcpy.AddField_management(dissol_zd, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_zd, "PNT_ZDEGRA_SINCAGRO", "DOUBLE")
-
+    if mod_geom == 'cf':
+        arcpy.CalculateField_management(dissol_zd, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
     with arcpy.da.UpdateCursor(dissol_zd, ["SHAPE@", "AREA_GEO", "PNT_ZDEGRA_SINCAGRO", "AREA_B5KM"]) as cursor:
         for row in cursor:
-            area_ha = row[0].getArea("GEODESIC", "HECTARES")
-            row[1] = area_ha
+            if mod_geom == 'cf':
+                area_ha = row[1]
+            else:
+                area_ha = row[0].getArea("GEODESIC", "HECTARES")
+                row[1] = area_ha
             row[2] = area_ha / row[3]
             cursor.updateRow(row)
     del cursor
@@ -422,7 +491,7 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
     table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "tb_{}_zd".format(REGION[0]))
     return table_zd
 
-def dictb(f_in, tb,area='', *args):
+def dictb(f_in, tb, area='', *args):
     """
     descripcion : funcion que agrega un campo a la capa de ingreso del tipo double
                 y crea un diccionario para la tabla indicada "tb" con los campos "args"
@@ -445,12 +514,11 @@ def dictb(f_in, tb,area='', *args):
     fields.extend(list(args))
     if area not in ('','#'):
         fields.append("AREA_GEO")
-
     sql = "{} IS NOT NULL".format(idrv)
     cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb, fields, sql)}
     return cursor
 
-def clasif(vx,v1,v2,neg=None):
+def clasif(vx,v1,v2):
     """
     descripcion: funcion que evalua un valor y devuelve su clase con respecto a dos puntos de control
     vx : valor a evaluar
@@ -458,71 +526,83 @@ def clasif(vx,v1,v2,neg=None):
     v2 : punto de control 2
     neg: parametro que evalua si se requiero considerar el negativo como clase para valores menores a cero
     """
-    if neg and vx<0:
+    if vx < 0:
         m = "NEGATIVO"
-    elif vx < v1 :
-        m ="BAJO"
-    elif vx >= v1 and vx <v2:
+    elif vx >= 0 and vx < v1:
+        m = "BAJO"
+    elif vx >= v1 and vx < v2:
         m = "MEDIO"
-    elif vx >= v2 :
+    elif vx >= v2:
         m = "ALTO"
 
     return m
 
-def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,tb8_brs,tb9_bvu, tb10_cpp):
+def max_min_data(data):
+    max_data = max(data)
+    if min(data) >= 0:
+        min_data = min(data)
+    else:
+        min_data = min([x for x in data if x >= 0])
+    min_ret = (max_data - min_data) / 3 + min_data
+    max_ret = (max_data - min_data) * 2 / 3 + min_data
+    print("max: {} - min: {}".format(max_data, min_data))
+    print("max_ret: {} - min_ret: {}".format(min_ret, max_ret))
+    return min_ret, max_ret
+
+def jointables(feature, tb1_anp, tb2_tur, tb3_zdg, tb4_res, tb5_cagr, tb6_pol, tb7_eag, tb8_brs, tb9_bvu, tb10_cpp):
 
     idrv = "ID_RV"
     # Se crean campos y cursor para las tablas
     # Areas naturales anp
     fanp1 = "MAX_anp_nomb"
     fanp2 = "MAX_anp_cate"
-    c_anp = dictb(feature,tb1_anp,'', fanp1, fanp2)
+    c_anp = dictb(feature, tb1_anp,'', fanp1, fanp2)
     print(c_anp)
     print("c_anp")
 
     # Recursos turisticos turis
     ftur = "SUM_P_RECTURIS"
-    c_tur = dictb(feature,tb2_tur, area= 'si', ftur)
+    c_tur = dictb(feature, tb2_tur, 'si', ftur)
     print("c_tur")
 
     # Zona degradad
     fzdg = "PNT_ZDEGRA_SINCAGRO"
-    c_zdg = dictb(feature, tb3_zdg, area= 'si', fzdg)
+    c_zdg = dictb(feature, tb3_zdg, 'si', fzdg)
     print("c_zdg")
 
     # Restauracion ROAM
     fres = "PNTROAM"
-    c_res = dictb(feature, tb4_res, area= 'si', fres)
+    c_res = dictb(feature, tb4_res, 'si', fres)
     print("c_res")
 
     # Cobertura agricola
     fcagr = "SUM_P_CAGRI"
-    c_cagr = dictb(feature, tb5_cagr, area= 'si', fcagr)
+    c_cagr = dictb(feature, tb5_cagr, 'si', fcagr)
     print("c_cagr")
 
     # Polos
     fpol = "SUM_PNTPOLOS"
-    c_pol = dictb(feature, tb6_pol, area= 'si', fpol)
+    c_pol = dictb(feature, tb6_pol, 'si', fpol)
     print("c_pol")
 
     # Estadistica Agraria
     feag = "PNTESTAGRI"
-    c_eag = dictb(feature, tb7_eag, area= 'si', feag)
+    c_eag = dictb(feature, tb7_eag, 'si', feag)
     print("c_eag")
 
     # Brechas Sociales
     fbrs = "PNTBRECHAS"
-    c_brs = dictb(feature, tb8_brs, area= 'si', fbrs)
+    c_brs = dictb(feature, tb8_brs, 'si', fbrs)
     print("c_brs")
 
     # Bosques vulnerables
     fbvu = "PNTBV"
-    c_bvu = dictb(feature, tb9_bvu, area= 'si', fbvu)
+    c_bvu = dictb(feature, tb9_bvu, 'si', fbvu)
     print("c_bvu")
 
     # Habitantes por centro poblado
     fcpp = "SUM_REPREPOBLA"
-    c_cpp = dictb(feature, tb10_cpp, fcpp)
+    c_cpp = dictb(feature, tb10_cpp, '', fcpp)
     print("c_cpp")
 
 
@@ -596,9 +676,9 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
     # Creamos los campos adicionales de análisis
     for val in list_fields:
-        arcpy.AddField_management(feature,val[0], val[1], "", "", val[2], val[3])
+        arcpy.AddField_management(feature, val[0], val[1], "", "", val[2], val[3])
 
-    #Definimos la lista de campos para el proceso final de evaluacion
+    # Definimos la lista de campos para el proceso final de evaluacion
     eval_upd = []
     eval_upd.extend(upd_fields)
     eval_upd.extend(fields_eval)
@@ -606,23 +686,49 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
 
     print("Fields agregados")
 
-    #Comenzamos con el actualizado final de campos
-    with arcpy.da.UpdateCursor(feature, eval_upd, sql ) as cursorU:
+    list_val_eval = []
+    list_val_ambi = []
+    list_val_econ = []
+    list_val_soci = []
 
-        for i in cursorU:
-            val_eval = i[3] +i[4] +i[5] +i[6] +i[7] +i[8] +i[9] -i[10] +i[11]
-            cls_eval = clasif(val_eval, 2.1, 4)
+    with arcpy.da.SearchCursor(feature, eval_upd, sql) as cursor:
+        for i in cursor:
+            val_eval = i[3] + i[4] + i[5] + i[6] + i[7] + i[8] + i[9] - i[10] + i[11]
+            list_val_eval.append(val_eval)
 
-            val_ambi = i[5] -i[10]+ i[4]
-            cls_ambi = clasif(val_ambi, 0.3, 0.7, 'si')
+            val_ambi = i[5] - i[10] + i[4]
+            list_val_ambi.append(val_ambi)
 
-            val_econ = i[3] +i[6] +i[7] + i[8]
-            cls_econ = clasif(val_econ, 1.5, 2.7)
+            val_econ = i[3] + i[6] + i[7] + i[8]
+            list_val_econ.append(val_econ)
 
             val_soci = i[9] + i[11]
-            cls_soci = clasif(val_soci, 1.5, 2.7)
+            list_val_soci.append(val_soci)
 
-            #campo area
+    del cursor
+
+    bp_eval_min, bp_eval_max = max_min_data(list_val_eval)
+    bp_ambi_min, bp_ambi_max = max_min_data(list_val_ambi)
+    bp_econ_min, bp_econ_max = max_min_data(list_val_econ)
+    bp_soci_min, bp_soci_max = max_min_data(list_val_soci)
+
+    # Comenzamos con el actualizado final de campos
+    with arcpy.da.UpdateCursor(feature, eval_upd, sql) as cursorU:
+
+        for i in cursorU:
+            val_eval = i[3] + i[4] + i[5] + i[6] + i[7] + i[8] + i[9] - i[10] + i[11]
+            cls_eval = clasif(val_eval, bp_eval_min, bp_eval_max)
+
+            val_ambi = i[5] - i[10] + i[4]
+            cls_ambi = clasif(val_ambi, bp_ambi_min, bp_ambi_max)
+
+            val_econ = i[3] + i[6] + i[7] + i[8]
+            cls_econ = clasif(val_econ, bp_econ_min, bp_econ_max)
+
+            val_soci = i[9] + i[11]
+            cls_soci = clasif(val_soci, bp_soci_min, bp_soci_max)
+
+            # campo area
             i[12] = i[21].getLength("GEODESIC", "KILOMETERS")
             i[13] = val_eval
             i[14] = cls_eval
@@ -633,18 +739,19 @@ def jointables(feature,tb1_anp,tb2_tur,tb3_zdg,tb4_res,tb5_cagr,tb6_pol,tb7_eag,
             i[19] = val_soci
             i[20] = cls_soci
             cursorU.updateRow(i)
-    del cursor
+    del cursorU
     arcpy.CopyFeatures_management(feature, os.path.join(PATH_GDB, "RVV_EVALUACION_{}".format(REGION[1])))
     print("UPDATE 2 finish")
 
 def process():
-    # red_vial_line = os.path.join(SCRATCH, "mfl_rv")
-    # red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_{}".format(REGION[0]))
+    red_vial_line = os.path.join(SCRATCH, "mfl_rv")
+    red_vial_pol = os.path.join(SCRATCH, "B5KM_RV_{}".format(REGION[0]))
+    fc_cob_agricola_1 = os.path.join(SCRATCH, "cob_agricola_dissol")
 
     start_time = datetime.now()
     arcpy.AddMessage("El proceso inicia - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     fc_distritos = copy_distritos(distritos)
-    red_vial_line, red_vial_pol = red_vial(via_nacional, via_departamental, via_vecinal)
+    red_vial_line, red_vial_pol = red_vial(via_vecinal, via_nacional, via_departamental)
     arcpy.AddMessage("Se generaron las redes viales (lineas y poligonos) - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     fc_cob_agricola_1 = cobertura_agricola_1(cob_agricola, fc_distritos)
     arcpy.AddMessage("Se realizo la primera parte del proceso de cobertura agricola - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -669,16 +776,16 @@ def process():
     tabla_ccpp = habitante_ccpp(ccpp, red_vial_pol)
     arcpy.AddMessage("Termino el proceso de habitantes - {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
-    # tabla_anp = os.path.join(PATH_GDB, "RV_{}_ANP".format(REGION[0]))
-    # tabla_turis = os.path.join(PATH_GDB, "RV_{}_TUR".format(REGION[0]))
-    # tabla_zd = os.path.join(PATH_GDB, "tb_{}_zd".format(REGION[0]))
-    # tabla_roam = os.path.join(PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
-    # tabla_cob_agric = os.path.join(PATH_GDB, "tb_cagri_{}".format(REGION[0]))
-    # tabla_polos = os.path.join(PATH_GDB, "tb_polos_{}".format(REGION[0]))
-    # tabla_ea = os.path.join(PATH_GDB, "RV_{}_EA".format(REGION[0]))
-    # tabla_bs = os.path.join(PATH_GDB, "RV_{}_BS".format(REGION[0]))
-    # tabla_bv = os.path.join(PATH_GDB, "RV_{}_BV".format(REGION[0]))
-    # tabla_ccpp = os.path.join(PATH_GDB, "RV_{}_CCPP".format(REGION[0]))
+    tabla_anp = os.path.join(PATH_GDB, "RV_{}_ANP".format(REGION[0]))
+    tabla_turis = os.path.join(PATH_GDB, "RV_{}_TUR".format(REGION[0]))
+    tabla_zd = os.path.join(PATH_GDB, "tb_{}_zd".format(REGION[0]))
+    tabla_roam = os.path.join(PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
+    tabla_cob_agric = os.path.join(PATH_GDB, "tb_cagri_{}".format(REGION[0]))
+    tabla_polos = os.path.join(PATH_GDB, "tb_polos_{}".format(REGION[0]))
+    tabla_ea = os.path.join(PATH_GDB, "RV_{}_EA".format(REGION[0]))
+    tabla_bs = os.path.join(PATH_GDB, "RV_{}_BS".format(REGION[0]))
+    tabla_bv = os.path.join(PATH_GDB, "RV_{}_BV".format(REGION[0]))
+    tabla_ccpp = os.path.join(PATH_GDB, "RV_{}_CCPP".format(REGION[0]))
 
     jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea, tabla_bs, tabla_bv, tabla_ccpp)
 
@@ -687,6 +794,9 @@ def process():
     arcpy.AddMessage('Duracion: {}'.format(end_time - start_time))
 
 def main():
+    # arcpy.AddMessage("Corrio con exito")
+    # arcpy.AddMessage(nom_reg)
+    # arcpy.AddMessage(PATH_GDB)
     process()
 
 if __name__ == '__main__':

@@ -1,44 +1,48 @@
 # -*- coding: utf-8 -*-
 import arcpy
 import os
+import string
 
 arcpy.env.overwriteOutput = True
 arcpy.env.parallelProcessingFactor = "100%"
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-PATH_GDB = os.path.join(BASE_DIR, "PRVDA.gdb")
+# PATH_GDB = os.path.join(BASE_DIR, "PRVDA.gdb")
 SCRATCH = arcpy.env.scratchGDB
 
 # Elegir la region que corresponde IMPORTANTE
-cod_reg = 22
 
-REGIONES = {1:  ["AMA", "AMAZONAS", 417365, "amazonas"],
-            2:  ["ANC", "ANCASH", 1139115, "ancash"],
-            3:  ["APU", "APURIMAC", 424259, "apurimac"],
-            4:  ["ARE", "AREQUIPA", 1460433, "arequipa"],
-            5:  ["AYA", "AYACUCHO", 650940, "ayacucho"],
-            6:  ["CAJ", "CAJAMARCA", 1427527, "cajamarca"],
-            7:  ["CAL", "CALLAO", 1046953, "callao"],
-            8:  ["CUS", "CUSCO", 1315220, "cusco"],
-            9:  ["HUA", "HUANCAVELICA", 367252, "huancavelica"],
-            10: ["HUA", "HUANUCO", 759962, "huanuco"],
-            11: ["ICA", "ICA", 893292, "ica"],
-            12: ["JUN", "JUNIN", 1316894, "junin"],
-            13: ["LA", "LA LIBERTAD", 1888972, "lalibertad"],
-            14: ["LAM", "LAMBAYEQUE", 1244821, "lambayeque"],
-            15: ["LIM", "LIMA", 10135009, "lima"],
-            16: ["LOR", "LORETO", 981897, "loreto"],
-            17: ["MAD", "MADRE DE DIOS", 161204, "madrededios"],
-            18: ["MOQ", "MOQUEGUA", 182017, "moquegua"],
-            19: ["PAS", "PASCO", 272136, "pasco"],
-            20: ["PIU", "PIURA", 1929970, "piura"],
-            21: ["PUN", "PUNO", 1226936, "puno"],
-            22: ["SM", "SAN MARTIN", 862459, "sanmartin"],
-            23: ["TAC", "TACNA", 349056, "tacna"],
-            24: ["TUM", "TUMBES", 234698, "tumbes"],
-            25: ["UCA", "UCAYALI", 548998, "ucayali"]}
+nom_reg = arcpy.GetParameterAsText(0)
+PATH_GDB = arcpy.GetParameterAsText(1)
 
-REGION = REGIONES[cod_reg]
+REGIONES = {"AMAZONAS":  ["AMA", "AMAZONAS", 417365, "amazonas", 1],
+            "ANCASH":  ["ANC", "ANCASH", 1139115, "ancash", 2],
+            "APURIMAC":  ["APU", "APURIMAC", 424259, "apurimac", 3],
+            "AREQUIPA":  ["ARE", "AREQUIPA", 1460433, "arequipa", 4],
+            "AYACUCHO":  ["AYA", "AYACUCHO", 650940, "ayacucho", 5],
+            "CAJAMARCA":  ["CAJ", "CAJAMARCA", 1427527, "cajamarca", 6],
+            "CALLAO":  ["CAL", "CALLAO", 1046953, "callao", 7],
+            "CUSCO":  ["CUS", "CUSCO", 1315220, "cusco", 8],
+            "HUANCAVELICA":  ["HUA", "HUANCAVELICA", 367252, "huancavelica", 9],
+            "HUANUCO": ["HUA", "HUANUCO", 759962, "huanuco", 10],
+            "ICA": ["ICA", "ICA", 893292, "ica", 11],
+            "JUNIN": ["JUN", "JUNIN", 1316894, "junin", 12],
+            "LA_LIBERTAD": ["LA", "LA LIBERTAD", 1888972, "lalibertad", 13],
+            "LAMBAYEQUE": ["LAM", "LAMBAYEQUE", 1244821, "lambayeque", 14],
+            "LIMA": ["LIM", "LIMA", 10135009, "lima", 15],
+            "LORETO": ["LOR", "LORETO", 981897, "loreto", 16],
+            "MADRE DE DIOS" : ["MAD", "MADRE DE DIOS", 161204, "madrededios", 17],
+            "MOQUEGUA": ["MOQ", "MOQUEGUA", 182017, "moquegua", 18],
+            "PASCO": ["PAS", "PASCO", 272136, "pasco", 19],
+            "PIURA": ["PIU", "PIURA", 1929970, "piura", 20],
+            "PUNO": ["PUN", "PUNO", 1226936, "puno", 21],
+            "SAN_MARTIN": ["SM", "SAN MARTIN", 862459, "sanmartin", 22],
+            "TACNA": ["TAC", "TACNA", 349056, "tacna", 23],
+            "TUMBES": ["TUM", "TUMBES", 234698, "tumbes", 24],
+            "UCAYALI": ["UCA", "UCAYALI", 548998, "ucayali", 25]}
+
+REGION = REGIONES[nom_reg]
+cod_reg = REGION[4]
 POB_REGION  = REGION[2]
 id_region = str(cod_reg).zfill(2)
 
@@ -48,10 +52,10 @@ departamentos = os.path.join(PATH_GDB, "insumos/departamentos_peru")
 distritos = os.path.join(PATH_GDB, "insumos/distritos_peru")
 
 # Red vial
-via_nacional = os.path.join(PATH_GDB, r"Insumos/red_vial_vecinal_2019MTC")
-via_departamental = os.path.join(PATH_GDB, r"Insumos/red_vial_nacional_2018MTC")
-via_vecinal = os.path.join(PATH_GDB, r"Insumos/red_vial_departamental_2018MTC")
-via_local = os.path.join(PATH_GDB, r"Insumos/rv_{}_new".format(REGION[3]))
+via_nacional = os.path.join(PATH_GDB, r"Insumos/red_vial_nacional_2018MTC")
+via_departamental = os.path.join(PATH_GDB, r"Insumos/red_vial_departamental_2018MTC")
+via_vecinal = os.path.join(PATH_GDB, r"Insumos/red_vial_vecinal_2019MTC")
+# via_local = os.path.join(PATH_GDB, r"Insumos/rv_{}_new".format(REGION[3]))
 
 # Areas naturales protegidas
 anp_acr = os.path.join(PATH_GDB, u"Ambiental/Área_de_Conservación_Regional")
