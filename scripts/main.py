@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 from settings import *
 from datetime import datetime
-import uuid
 
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
 mod_geom = "cf" #Calculatefield
 # mod_geom = "uc" #UpdateCursor
 
-# Functions
 def merge_capas(path_salida, *args):
     return arcpy.Merge_management([args], os.path.join(SCRATCH, path_salida))
 
@@ -18,8 +16,7 @@ def cortar_region(feature, region):
     sql = "{} = '{}'".format("DEPNOM", region)
     mfl_region = arcpy.MakeFeatureLayer_management(departamentos, "mfl_region", sql)
     fc_region = arcpy.CopyFeatures_management(mfl_region, os.path.join(SCRATCH, "region"))
-    name_uuid = uuid.uuid4().hex[:3]
-    clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region_{}".format(name_uuid)))
+    clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region_{}".format(REGION[1])))
     return clip_region
 
 def hidefields(lyr,*args):

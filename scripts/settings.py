@@ -2,16 +2,16 @@
 import arcpy
 import os
 import string
+import uuid
+
 
 arcpy.env.overwriteOutput = True
 arcpy.env.parallelProcessingFactor = "100%"
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-# PATH_GDB = os.path.join(BASE_DIR, "PRVDA.gdb")
 SCRATCH = arcpy.env.scratchGDB
 
 # Elegir la region que corresponde IMPORTANTE
-
 nom_reg = arcpy.GetParameterAsText(0)
 PATH_GDB = arcpy.GetParameterAsText(1)
 
@@ -31,7 +31,7 @@ REGIONES = {"AMAZONAS":  ["AMA", "AMAZONAS", 417365, "amazonas", 1],
             "LAMBAYEQUE": ["LAM", "LAMBAYEQUE", 1244821, "lambayeque", 14],
             "LIMA": ["LIM", "LIMA", 10135009, "lima", 15],
             "LORETO": ["LOR", "LORETO", 981897, "loreto", 16],
-            "MADRE DE DIOS" : ["MAD", "MADRE DE DIOS", 161204, "madrededios", 17],
+            "MADRE_DE_DIOS" : ["MAD", "MADRE DE DIOS", 161204, "madrededios", 17],
             "MOQUEGUA": ["MOQ", "MOQUEGUA", 182017, "moquegua", 18],
             "PASCO": ["PAS", "PASCO", 272136, "pasco", 19],
             "PIURA": ["PIU", "PIURA", 1929970, "piura", 20],
@@ -88,3 +88,15 @@ ccpp = os.path.join(PATH_GDB, r"Social\ccpp_peru_2017")
 
 # Cobertura agricola
 cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018")
+
+
+TOOL_NAME = {
+    'T01': 'EstructuraDirectorio',
+
+    'T02': 'pmmUnidadesGeologicas',
+    'T03': 'pmmFallasGeologicas',
+    'T04': 'pmmDepositosMinerales',
+    'T05': 'pmmGeoquimica',
+    'T06': 'pmmSensoresRemotos',
+    'T07': 'PotencialMineroMetalico'
+}
