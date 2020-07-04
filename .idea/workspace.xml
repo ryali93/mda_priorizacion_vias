@@ -2,13 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0951925d-86fb-48ca-ba39-c1cbe4e30356" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/scripts/01_red_vial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/02_anp.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/funciones.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/04_bosque_vulnerable.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/05_restauracion.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/herramienta.tbx" beforeDir="false" afterPath="$PROJECT_DIR$/herramienta.tbx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
