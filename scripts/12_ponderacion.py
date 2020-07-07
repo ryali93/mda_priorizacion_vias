@@ -274,7 +274,7 @@ def process():
     jointables(red_vial_line, tabla_anp, tabla_turis, tabla_zd, tabla_roam, tabla_cob_agric, tabla_polos, tabla_ea,
                tabla_bs, tabla_bv, tabla_ccpp)
     arcpy.AddMessage("Termino Zonas degradadas")
-    arcpy.SetParameterAsText(5, tabla_zd)
+    arcpy.SetParameterAsText(3, red_vial_line)
 
 
 def main():
