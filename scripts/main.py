@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from settings import *
 from datetime import datetime
+from funciones import *
 
 sql_region = "{} = '{}'".format("DEPARTAMEN", REGION[1])
 mod_geom = "cf" #Calculatefield
@@ -11,13 +12,6 @@ def merge_capas(path_salida, *args):
 
 def copy_distritos(distritos):
     return arcpy.CopyFeatures_management(distritos, os.path.join(SCRATCH, "distritos"))
-
-def cortar_region(feature, region):
-    sql = "{} = '{}'".format("DEPNOM", region)
-    mfl_region = arcpy.MakeFeatureLayer_management(departamentos, "mfl_region", sql)
-    fc_region = arcpy.CopyFeatures_management(mfl_region, os.path.join(SCRATCH, "region"))
-    clip_region = arcpy.Clip_analysis(feature, fc_region, os.path.join(SCRATCH, "clip_region_{}".format(REGION[1])))
-    return clip_region
 
 def hidefields(lyr,*args):
     """
@@ -82,7 +76,7 @@ def red_vial(via_nacional, via_departamental, via_vecinal):
 
     # Se calcula el area del buffer 5km para read vial
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(mfl_buffer, field_area, "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(mfl_buffer, field_area, "!shape.area@hectares!","PYTHON3")
 
     else:
         with arcpy.da.UpdateCursor(mfl_buffer, ["SHAPE@", field_area]) as cursor:
@@ -91,7 +85,7 @@ def red_vial(via_nacional, via_departamental, via_vecinal):
                 area_ha = row[0].getArea("GEODESIC","HECTARES")
                 row[1] = area_ha
                 cursor.updateRow(row)
-    del cursor
+        del cursor
     return mfl_rv, mfl_buffer
 
 def area_natural_protegida(red_vial_line, anp_acr, anp_def, anp_pri, anp_amr, anp_zr):
@@ -148,7 +142,7 @@ def recursos_turisticos(feature, red_vial_pol):
 
     # Se calcula el porcentaje de area de buffer_turis sobre red_vial_pol
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(isc_fc, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(isc_fc, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(isc_fc, ["SHAPE@", "AREA_GEO", fieldname, "AREA_B5KM"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -158,7 +152,7 @@ def recursos_turisticos(feature, red_vial_pol):
                 row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
-    del cursor
+        del cursor
     arcpy.AddMessage("turis termino update")
     arcpy.AddMessage(isc_fc)
     arcpy.AddMessage(os.path.join(SCRATCH, "dissol_isc_rectur_{}2".format(REGION[0])))
@@ -174,7 +168,7 @@ def recursos_turisticos(feature, red_vial_pol):
     return table_tur
 
 def bosque_vulnerable(feature, red_vial_pol):
-    sql = "VULNERABILIDAD in ('MUY ALTO', 'ALTO', 'MEDIO')"
+    sql = "Categoria in ('MUY ALTO', 'ALTO', 'MEDIO')"
     mfl_bv = arcpy.MakeFeatureLayer_management(feature,"mfl_bv",sql)
 
     intersect_bv = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_bv, ""]],
@@ -190,7 +184,7 @@ def bosque_vulnerable(feature, red_vial_pol):
     arcpy.AddField_management(dissol_isc_bv, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_bv, "PNTBV", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(dissol_isc_bv, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(dissol_isc_bv, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(dissol_isc_bv, ["SHAPE@","AREA_GEO","PNTBV","AREA_B5KM"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -200,7 +194,7 @@ def bosque_vulnerable(feature, red_vial_pol):
                 row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
-    del cursor
+        del cursor
 
     table_bv = arcpy.TableToTable_conversion(dissol_isc_bv, PATH_GDB, "RV_{}_BV".format(REGION[0]))
     return table_bv
@@ -223,7 +217,7 @@ def restauracion(feature, red_vial_pol):
     arcpy.AddField_management(dissol_isc_roam, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_isc_roam, "PNTROAM", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(dissol_isc_roam, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(dissol_isc_roam, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(dissol_isc_roam, ["SHAPE@","AREA_GEO","PNTROAM","AREA_B5KM"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -233,7 +227,7 @@ def restauracion(feature, red_vial_pol):
                 row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
-    del cursor
+        del cursor
 
     table_roam = arcpy.TableToTable_conversion(dissol_isc_roam, PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
     return table_roam
@@ -254,7 +248,7 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
                 respuesta = df_brecha.get(row[0])
                 row[1] = respuesta
                 cursor.updateRow(row)
-    del cursor
+        del cursor
 
     intersect_bs = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
                                             out_feature_class=os.path.join(SCRATCH, "intersect_bs"),
@@ -270,7 +264,7 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
     arcpy.AddField_management(dissol_bs, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_bs, "PNTBRECHAS", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(dissol_bs, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(dissol_bs, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(dissol_bs, ["SHAPE@","AREA_GEO","PNTBRECHAS","AREA_B5KM"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -280,7 +274,7 @@ def brechas_sociales(distritos, red_vial_pol, tbpuntaje):
                 row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
-    del cursor
+        del cursor
 
     table_bs = arcpy.TableToTable_conversion(dissol_bs, PATH_GDB, "RV_{}_BS".format(REGION[0]))
     return table_bs
@@ -305,7 +299,7 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
                 respuesta = df_estad_agr.get(row[0])
                 row[1] = respuesta
                 cursor.updateRow(row)
-    del cursor
+        del cursor
 
     intersect_ea = arcpy.Intersect_analysis(in_features=[[red_vial_pol, ""], [mfl_dist, ""]],
                                             out_feature_class=os.path.join(SCRATCH, "intersect_ea"),
@@ -320,7 +314,7 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
     arcpy.AddField_management(dissol_ea, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_ea, "PNTESTAGRI", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(dissol_ea, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(dissol_ea, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(dissol_ea, ["SHAPE@","AREA_GEO","PNTESTAGRI","AREA_B5KM"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -330,7 +324,7 @@ def estadistica_agraria(distritos, red_vial_pol, tbpuntaje):
                 row[1] = area_ha
             row[2] = area_ha/row[3]
             cursor.updateRow(row)
-    del cursor
+        del cursor
 
     table_ea = arcpy.TableToTable_conversion(dissol_ea, PATH_GDB, "RV_{}_EA".format(REGION[0]))
     return table_ea
@@ -345,7 +339,7 @@ def habitante_ccpp(feature, red_vial_pol):
         for x in cursor:
             x[1] = x[0] / POB_REGION
             cursor.updateRow(x)
-    del cursor
+        del cursor
     intersect_ccpp = arcpy.Intersect_analysis(in_features=[mfl_ccpp, red_vial_pol],
                                               out_feature_class=os.path.join(SCRATCH, "intersect_ccpp_{}".format(REGION[0])))
     # --------------------------------------
@@ -386,7 +380,7 @@ def cobertura_agricola_2(feature, red_vial_pol):
     arcpy.AddField_management(cob_agricola_intersect2, field, "DOUBLE")
     arcpy.AddField_management(cob_agricola_intersect2, "AREA_GEO", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(cob_agricola_intersect2, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(cob_agricola_intersect2, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(cob_agricola_intersect2, ["SHAPE@", "AREA_B5KM", "P_CAGRI","AREA_GEO"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -397,7 +391,7 @@ def cobertura_agricola_2(feature, red_vial_pol):
             row[2] = area_ha / row[1]
 
             cursor.updateRow(row)
-    del cursor
+        del cursor
     cob_agricola_dissol = arcpy.Dissolve_management(cob_agricola_intersect2, os.path.join(SCRATCH,"cob_agricola_dissol"),
                                                     dissolve_field=["ID_RV"],
                                                     statistics_fields=[[field, "SUM"]], multi_part="MULTI_PART",
@@ -443,7 +437,7 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
     arcpy.AddField_management(polos_mfl, field, "DOUBLE")
     arcpy.AddField_management(polos_mfl, "AREA_GEO", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(polos_mfl, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(polos_mfl, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(polos_mfl, ["SHAPE@", "AREA_B5KM", field, "AREA_GEO"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -453,7 +447,7 @@ def polos_intensificacion(feature, cobertura, red_vial_pol):
                 row[3] = area_ha
             row[2] = area_ha / row[1]
             cursor.updateRow(row)
-    del cursor
+        del cursor
 
     cobertura_dissol_f = arcpy.Dissolve_management(polos_mfl, os.path.join(SCRATCH, "cobertura_dissol_f"),
                                                    dissolve_field=["ID_RV"], statistics_fields=[[field, "SUM"]],
@@ -473,7 +467,7 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
     arcpy.AddField_management(dissol_zd, "AREA_GEO", "DOUBLE")
     arcpy.AddField_management(dissol_zd, "PNT_ZDEGRA_SINCAGRO", "DOUBLE")
     if mod_geom == 'cf':
-        arcpy.CalculateField_management(dissol_zd, "AREA_GEO", "!shape.area@hectares!","PYTHON_9.3")
+        arcpy.CalculateField_management(dissol_zd, "AREA_GEO", "!shape.area@hectares!","PYTHON3")
     with arcpy.da.UpdateCursor(dissol_zd, ["SHAPE@", "AREA_GEO", "PNT_ZDEGRA_SINCAGRO", "AREA_B5KM"]) as cursor:
         for row in cursor:
             if mod_geom == 'cf':
@@ -483,9 +477,9 @@ def zona_degradada_sin_cob_agricola(cob_agri_sinbosque, bosque_nobosque, red_via
                 row[1] = area_ha
             row[2] = area_ha / row[3]
             cursor.updateRow(row)
-    del cursor
+        del cursor
 
-    table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "tb_{}_zd".format(REGION[0]))
+    table_zd = arcpy.TableToTable_conversion(dissol_zd, PATH_GDB, "RV_{}_ZD".format(REGION[0]))
     return table_zd
 
 def dictb(f_in, tb, area='', *args):
@@ -775,10 +769,10 @@ def process():
 
     tabla_anp = os.path.join(PATH_GDB, "RV_{}_ANP".format(REGION[0]))
     tabla_turis = os.path.join(PATH_GDB, "RV_{}_TUR".format(REGION[0]))
-    tabla_zd = os.path.join(PATH_GDB, "tb_{}_zd".format(REGION[0]))
+    tabla_zd = os.path.join(PATH_GDB, "RV_{}_ZD".format(REGION[0]))
     tabla_roam = os.path.join(PATH_GDB, "RV_{}_ROAM".format(REGION[0]))
-    tabla_cob_agric = os.path.join(PATH_GDB, "tb_cagri_{}".format(REGION[0]))
-    tabla_polos = os.path.join(PATH_GDB, "tb_polos_{}".format(REGION[0]))
+    tabla_cob_agric = os.path.join(PATH_GDB, "RV_CAGRI_{}".format(REGION[0]))
+    tabla_polos = os.path.join(PATH_GDB, "RV_POLOS_{}".format(REGION[0]))
     tabla_ea = os.path.join(PATH_GDB, "RV_{}_EA".format(REGION[0]))
     tabla_bs = os.path.join(PATH_GDB, "RV_{}_BS".format(REGION[0]))
     tabla_bv = os.path.join(PATH_GDB, "RV_{}_BV".format(REGION[0]))

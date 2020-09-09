@@ -1,3 +1,4 @@
+*.gitignore
 *.gdb
 *.pyc
 *.xml
@@ -12,4 +13,6 @@
 *.shx
 *.xlsx
 *.csv
+*.tbx
 \docs
+\received
