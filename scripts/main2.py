@@ -58,26 +58,36 @@ def calculate_area(feature, field, mod_geom="cf"):
                 cursor.updateRow(row)
         del cursor
 
+def create_buffer(feature, distancia):
+    return arcpy.Buffer_analysis(feature, os.path.join(SCRATCH, "BUFFER"), distancia, "FULL", "ROUND", "NONE")
+
 def calculate_ptj(feature, field, criterio):
     with arcpy.da.UpdateCursor(feature, [field, field]) as cursor:
         for row in cursor:
             cursor.updateRow(row)
     del cursor
 
-def area_evaluar(feature, region):
-    field_dissol = ""
-    statistics = [[field_dissol, "MAX"]]
-    field_area = ""
-    evaluar = seleccionar_region(feature.path, REGIONES[region][0], os.path.join(SCRATCH, "EVALUAR"))
-    dissol = dissolve(evaluar, field_dissol, statistics, os.path.join(SCRATCH, "EV_DISSOL"))
-    add_field(dissol, field_area)
-    calculate_area(dissol, field_area, mod_geom="")
-    return dissol
+def area_evaluar(feature, region, tipo = "via"):
+    ''' Puede ser de las vias o de centros poblados'''
+    if tipo == "via":
+        field_dissol = ["CODRUTA", "ID_EV"]
+        statistics = [[field_dissol, "MAX"]]
+        field_area = "BRV"
+    else:
+        field_dissol = ["CODRUTA", "ID_EV"]
+        statistics = [[field_dissol, "MAX"]]
+        field_area = "BRV"
+    area_eval = seleccionar_region(feature.path, REGIONES[region], os.path.join(SCRATCH, "EVALUAR"))
+    dissol = dissolve(area_eval, field_dissol, statistics, os.path.join(SCRATCH, "EV_DISSOL"))
+    buffer_area = create_buffer(dissol, "5 kilometers")
+    add_field(buffer_area, field_area)
+    calculate_area(buffer_area, field_area, mod_geom="")
+    return area_eval, dissol
 
 def p01_anp(region, area_eval, output):
-    field_dissol = ""
-    statistics = [[field_dissol, "MAX"]]
-    anp = seleccionar_region(gpo_anp().path, REGIONES[region][0], os.path.join(SCRATCH, "anp_{}".format(region)))
+    field_dissol = ["ID_RV", "CODRUTA"]
+    statistics = [[gpo_anp().anp_cod, "MAX"], [gpo_anp().anp_nom, "MAX"], [gpo_anp().ranp, "MAX"]]
+    anp = seleccionar_region(gpo_anp().path, REGIONES[region], os.path.join(SCRATCH, "anp_{}".format(region)))
     anp_intersect = intersect_layers(anp, area_eval, os.path.join(SCRATCH, "INTERSECT"))
     anp_dissol = dissolve(anp_intersect, field_dissol, statistics, output)
     return anp_dissol
@@ -149,14 +159,20 @@ def p05_roam(region, area_eval, feature_final, output):
 
 def process():
     region = nom_reg
+    tipo_eval = "via"
     datasets = ["process"]
     # Crear carpeta y geodatabase
     GDB_PROCESS = create_gdb(r"C:/mda_tmp", region)
     create_datasets(GDB_PROCESS, datasets)
     # AREA_EVALUAR
-    feature_eval = area_evaluar(GDB_PROCESS, region)
+    if tipo_eval == "via":
+        area_eval, dissol = area_evaluar(gpl_rv_teu().path, region, tipo_eval)
+    else:
+        area_eval, dissol = area_evaluar(gpt_ccpp().path, region, tipo_eval)
     # VARIABLES
-    p01_anp()
+    anp_d = p01_anp(region, area_eval, os.path.join(GDB_PROCESS, gpo_anp().name))
+
+
 
 
 def main():
