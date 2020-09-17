@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="0951925d-86fb-48ca-ba39-c1cbe4e30356" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/main2.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/main2.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +28,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/scripts" />
+    <property name="last_opened_file_path" value="E:/sernanp/proyectos/mapas" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
@@ -179,10 +178,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="136" y="455" width="1736" height="856" key="DiffContextDialog/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1593880356197" />
-    <state x="740" y="276" key="FileChooserDialogImpl" timestamp="1599601256010">
+    <state x="740" y="276" key="FileChooserDialogImpl" timestamp="1600195392077">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="740" y="276" key="FileChooserDialogImpl/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1599601256010" />
+    <state x="740" y="276" key="FileChooserDialogImpl/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1600195392077" />
     <state width="1899" height="222" key="GridCell.Tab.0.bottom" timestamp="1598656104901">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -203,10 +202,10 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="461" y="163" key="SettingsEditor/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1592868929629" />
-    <state x="656" y="345" key="com.intellij.ide.util.TipDialog" timestamp="1600020924480">
+    <state x="656" y="345" key="com.intellij.ide.util.TipDialog" timestamp="1600195365518">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="656" y="345" key="com.intellij.ide.util.TipDialog/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1600020924480" />
+    <state x="656" y="345" key="com.intellij.ide.util.TipDialog/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1600195365518" />
     <state x="601" y="246" width="700" height="530" key="recent.locations.popup" timestamp="1597888058478">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
