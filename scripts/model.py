@@ -7,17 +7,19 @@ class gpo_limitedistrital(object):
     def __init__(self):
         self.id       = "OBJECTID"
         self.shape    = "SHAPE"
-        self.anp_cate = "anp_cate"
-        self.anp_nomb = "anp_nomb"
-        self.tipo     = "anp_tipo"
+        self.iddpto = "IDDPTO"
+        self.idprov = "IDPROV"
+        self.prov     = "PROV"
+        self.iddist = "IDDIST"
+        self.dist = "DIST"
 
     @property
     def dataset(self):
-        return 'f00_Base'
+        return 'LIMITES'
 
     @property
     def name(self):
-        return 'gpo_anp'
+        return 'DIST'
 
     @property
     def path(self):
@@ -27,16 +29,16 @@ class gpl_rv_departamental(object):
     def __init__(self):
         self.id       = "OBJECTID"
         self.shape    = "SHAPE"
-        self.codruta = "CODRUTA"
-        self.superficie_l = "SUPERFICIE_L"
+        self.iddpto   = "IDDPTO"
+        self.dpto     = "DPTO"
 
     @property
     def dataset(self):
-        return 'f01_RedVial'
+        return 'LIMITES'
 
     @property
     def name(self):
-        return 'gpl_rv_departamental'
+        return 'DPTO'
 
     @property
     def path(self):
@@ -82,29 +84,26 @@ class gpl_rv_vecinal(object):
 
 class gpl_rv_teu(object):
     def __init__(self):
-        self.id       = "OBJECTID"
-        self.shape    = "SHAPE"
-        self.codruta = "CODRUTA"
-        self.superficie_l = "SUPERFICIE_L"
-        self.fuente = "FUENTE"
-        self.l_tramo = "L_TRAMO"
-        self.l_tramo_dist = "L_TRAMO_DIST"
-        self.id_ev = "ID_EV"
-        self.iddpto = "IDDPTO"
-        self.idprov = "IDPROV"
-        self.iddist = "IDDIST"
-        self.dpto = "DPTO"
-        self.prov = "PROV"
-        self.dist = "DIST"
-        self.ubigeo = "UBIGEO"
+        self.id         = "OBJECTID"
+        self.shape      = "SHAPE"
+        self.iddpto     = "IDDPTO"
+        self.dpto       = "DPTO"
+        self.idprov     = "IDPROV"
+        self.prov       = "PROV"
+        self.iddist     = "IDDIST"
+        self.dist       = "DIST"
+        self.codruta    = "CODRUTA"
+        self.superfic_l = "SUPERFIC_L"
+        self.fuente     = "FUENTE"
+        self.l_tramo    = "L_TRAMO"
 
     @property
     def dataset(self):
-        return 'f01_RedVial'
+        return 'RV'
 
     @property
     def name(self):
-        return 'gpl_rv_teu'
+        return 'RED_VIAL_TEU'
 
     @property
     def path(self):
@@ -114,19 +113,19 @@ class gpo_anp(object):
     def __init__(self):
         self.id       = "OBJECTID"
         self.shape    = "SHAPE"
-        self.ranp = "RANP"
-        self.anp_cod = "ANP_COD"
-        self.anp_nom = "ANP_NOM"
-        self.iddpto = "IDDPTO"
-        self.dpto = "DPTO"
+        self.ranp     = "RANP"
+        self.anp_cod  = "CODANP"
+        self.anp_nom  = "NOMANP"
+        self.iddpto   = "IDDPTO"
+        self.dpto     = "DPTO"
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_anp'
+        return 'ANP'
 
     @property
     def path(self):
@@ -134,19 +133,19 @@ class gpo_anp(object):
 
 class gpo_cagri(object):
     def __init__(self):
-        self.id       = "OBJECTID"
-        self.shape    = "SHAPE"
-        self.cagri_cat = "CAGRI_CAT"
-        self.iddpto = "IDDPTO"
-        self.dpto = "DPTO"
+        self.id        = "OBJECTID"
+        self.shape     = "SHAPE"
+        self.cagri_cat = "CATEGORIA"
+        self.iddpto    = "IDDPTO"
+        self.dpto      = "DPTO"
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_cagri'
+        return 'CAGRI'
 
     @property
     def path(self):
@@ -163,11 +162,11 @@ class gpo_rdef(object):
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_rdef'
+        return 'RDEF'
 
     @property
     def path(self):
@@ -183,11 +182,11 @@ class gpo_roam(object):
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_roam'
+        return 'ROAM'
 
     @property
     def path(self):
@@ -202,11 +201,11 @@ class gpo_zdegra(object):
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_zdegra'
+        return 'ZDEGRA'
 
     @property
     def path(self):
@@ -216,18 +215,18 @@ class gpo_brturis(object):
     def __init__(self):
         self.id       = "OBJECTID"
         self.shape    = "SHAPE"
-        self.rt_nom = "RT_NOM"
-        self.rt_cat = "RT_CAT"
+        self.rt_nom = "NOMRT"
+        self.rt_cat = "CATRT"
         self.iddpto = "IDDPTO"
         self.dpto = "DPTO"
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_brturis'
+        return 'BRTURIS'
 
     @property
     def path(self):
@@ -237,21 +236,27 @@ class gpt_ccpp(object):
     def __init__(self):
         self.id       = "OBJECTID"
         self.shape    = "SHAPE"
-        self.regionnat = "REGIONNAT"
-        self.ccpp_cat = "CCPP_CAT"
-        self.ccpp_cod = "CCPP_COD"
-        self.ccpp_nom = "CCPP_NOM"
-        self.ccpp_pob = "CCPP_POB"
+        # self.regionnat = "REGIONNAT"
         self.iddpto = "IDDPTO"
         self.dpto = "DPTO"
+        self.ccpp_cod = "CODCCPP"
+        self.ccpp_nom = "NOMCCPP"
+        self.ccpp_pob = "POBCCPP"
+        self.ccpp_pobh = "POBHCCPP"
+        self.ccpp_pobm = "POBMCCPP"
+        self.ccpp_cat = "CATCCPP"
+        self.viv_ccpp = "VIVCCPP"
+        self.viv_ccppo = "VIVOCCPPP"
+        self.viv_ccppd = "VIVDCCPP"
+
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpt_ccpp'
+        return 'CCPP'
 
     @property
     def path(self):
@@ -261,19 +266,19 @@ class gpo_polos(object):
     def __init__(self):
         self.id       = "OBJECTID"
         self.shape    = "SHAPE"
-        self.ranp = "RANP"
-        self.anp_cod = "ANP_COD"
-        self.anp_nom = "ANP_NOM"
+        self.pcultivos = "PCULTIVOS"
+        self.pacu = "PACU"
+        self.pespforest = "PESPFOREST"
         self.iddpto = "IDDPTO"
         self.dpto = "DPTO"
 
     @property
     def dataset(self):
-        return 'f02_Variables'
+        return 'VARIABLES'
 
     @property
     def name(self):
-        return 'gpo_anp'
+        return 'POLOS'
 
     @property
     def path(self):
