@@ -256,3 +256,25 @@ class gpt_ccpp(object):
     @property
     def path(self):
         return os.path.join(PATH_GDB, self.dataset, self.name)
+
+class gpo_polos(object):
+    def __init__(self):
+        self.id       = "OBJECTID"
+        self.shape    = "SHAPE"
+        self.ranp = "RANP"
+        self.anp_cod = "ANP_COD"
+        self.anp_nom = "ANP_NOM"
+        self.iddpto = "IDDPTO"
+        self.dpto = "DPTO"
+
+    @property
+    def dataset(self):
+        return 'f02_Variables'
+
+    @property
+    def name(self):
+        return 'gpo_anp'
+
+    @property
+    def path(self):
+        return os.path.join(PATH_GDB, self.dataset, self.name)
