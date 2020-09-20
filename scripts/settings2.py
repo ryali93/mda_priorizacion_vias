@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SCRATCH = arcpy.env.scratchGDB
 
 # Elegir la region que corresponde IMPORTANTE
-nom_reg = "CUSCO"
+nom_reg = "UCAYALI"
 PATH_GDB = r"E:\2020\mda\RED_VIAL_PERU.gdb"
 # nom_reg = arcpy.GetParameterAsText(0)
 # PATH_GDB = arcpy.GetParameterAsText(1)
@@ -47,57 +47,5 @@ cod_reg = REGION[4]
 POB_REGION  = REGION[2]
 id_region = str(cod_reg).zfill(2)
 
-# Paths
-# INSUMOS
-departamentos = os.path.join(PATH_GDB, "insumos/departamentos_peru")
-distritos = os.path.join(PATH_GDB, "insumos/distritos_peru")
-
-# Red vial
-via_nacional = os.path.join(PATH_GDB, r"Insumos/red_vial_nacional_2018MTC")
-via_departamental = os.path.join(PATH_GDB, r"Insumos/red_vial_departamental_2018MTC")
-via_vecinal = os.path.join(PATH_GDB, r"Insumos/red_vial_vecinal_2019MTC")
-# via_local = os.path.join(PATH_GDB, r"Insumos/rv_{}_new".format(REGION[3]))
-
-# Areas naturales protegidas
-anp_acr = os.path.join(PATH_GDB, u"Ambiental/Área_de_Conservación_Regional")
-anp_def = os.path.join(PATH_GDB, u"Ambiental/Área_de_Conservación_Privada")
-anp_pri = os.path.join(PATH_GDB, u"Ambiental/Áreas_Naturales_Protegidas_Definitivas")
-anp_amr = os.path.join(PATH_GDB, u"Ambiental/Zona_de_amortiguamiento")
-anp_zr = os.path.join(PATH_GDB, u"Ambiental/Zonas_Reservadas")
-
-# Recursos turisticos
-fc_turis = os.path.join(PATH_GDB, u"Economico/atractivos_turisticos")
-
-# Bosques Vulnerables
-bosq_vuln = os.path.join(PATH_GDB, r"Ambiental\BV_{}_2018".format(REGION[3]))
-
-# Restauracion ROAM
-fc_roam = os.path.join(PATH_GDB, r"Ambiental\ROAM_{}".format(REGION[3]))
-
-# Polos de intensificacion productiva en cobertura agricola
-bosque = os.path.join(PATH_GDB, r"Ambiental\Bosque_No_Bosque_2018_peru")
-pot_product = os.path.join(PATH_GDB, r"Economico\polos_{}_2018".format(REGION[3]))
-
-# Brechas sociales
-tbp_brechas = os.path.join(PATH_GDB,r'puntaje_brechas_sociales')
-
-# Estadistica agraria
-tbp_estagr = os.path.join(PATH_GDB,r'puntaje_estadistica_agraria_2018')
-
-# Habitantes por centro poblado
-ccpp = os.path.join(PATH_GDB, r"Social\ccpp_peru_2017")
-
-# Cobertura agricola
-cob_agricola = os.path.join(PATH_GDB, r"Economico\cobertura_agricola_peru_2018")
-
-
-TOOL_NAME = {
-    'T01': 'EstructuraDirectorio',
-
-    'T02': 'pmmUnidadesGeologicas',
-    'T03': 'pmmFallasGeologicas',
-    'T04': 'pmmDepositosMinerales',
-    'T05': 'pmmGeoquimica',
-    'T06': 'pmmSensoresRemotos',
-    'T07': 'PotencialMineroMetalico'
-}
+# python_version = "PYTHON3"
+python_version = "PYTHON_9.3"
