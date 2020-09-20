@@ -223,18 +223,19 @@ def agregar_campos(feature, *args):
 
 def actualizar_valor(feature, *args):
     # "P_CAGRI", "PZDEGRA", "P_RDEF", "P_RTURIS", "P_ROAM", "P_POLOS", "MEDIAN_PSOCIAL", "MEDIAN_PVBPA", "SUM_POBCCPP", "PECONOMICO", "PPREAMBIENTAL", "PSOCIAL", "PAMBIENTAL", "PPRETOTAL", "PTOTAL"
-    campos = [args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9]]
+    campos = [args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10],
+              args[11], args[12], args[13], args[14]]
     with arcpy.da.UpdateCursor(feature, campos) as cursor:
         for x in cursor:
-            for campo in range(10):
+            for campo in range(9):
                 if x[campo] == None:
                     x[campo] = 0
-            x[10] = x[3] + x[0] + x[8] + x[5]
-            x[11] = x[4] + x[1] + x[2]
-            x[12] = x[6]
-            x[13] = x[11]
-            x[14] = x[3] + x[0] + x[8] + x[5] + x[4] + x[1] + x[2] + x[12]
-            x[15] = x[14]
+            x[9] = x[3] + x[0] + x[8] + x[5]
+            x[10] = x[4] + x[1] + x[2]
+            x[11] = x[6]
+            x[12] = x[11]
+            x[13] = x[3] + x[0] + x[8] + x[5] + x[4] + x[1] + x[2] + x[12]
+            x[14] = x[13]
             cursor.updateRow(x)
 
 def actualizar_valor2(feature, *args):
@@ -247,32 +248,21 @@ def actualizar_valor2(feature, *args):
                 x[1] = 0
             cursor.updateRow(x)
 
-def dictb(f_in, tb, area='', *args):
-    """
-    descripcion : funcion que agrega un campo a la capa de ingreso del tipo double
-                y crea un diccionario para la tabla indicada "tb" con los campos "args"
-    f_in : capa a la que se le agregaran los campos de args
-    tb   : tabla ingresada para generar el diccionario
-    args : nombres de campos a crear en f_in, los mismo que se usan para construir el diccionario
+def actualizar_valor3(feature, *args):
+    # "PAMBIENTAL", "PECONOMICO", "PSOCIAL", "PTOTAL", "CAMBIENTAL", "CECONOMICO", "CSOCIAL", "CTOTAL"
+    campos = [args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]]
+    min_ret0, max_ret0 = max_min_data([x[0] for x in arcpy.da.SearchCursor(feature, [campos[0]])])
+    min_ret1, max_ret1 = max_min_data([x[0] for x in arcpy.da.SearchCursor(feature, [campos[1]])])
+    min_ret2, max_ret2 = max_min_data([x[0] for x in arcpy.da.SearchCursor(feature, [campos[2]])])
+    min_ret3, max_ret3 = max_min_data([x[0] for x in arcpy.da.SearchCursor(feature, [campos[3]])])
 
-    output: cursor--> dicionario con key :"ID_RV" y values : args
-    """
-    for field in args:
-        print(field)
-        if field.startswith("MAX"):
-            arcpy.AddField_management(f_in, field, "TEXT", "#", "#", 100)
-        else:
-            arcpy.AddField_management(f_in, field, "DOUBLE")
-
-    fields = []
-    idrv = "ID_RV"
-    fields.append(idrv)
-    fields.extend(list(args))
-    if area not in ('','#'):
-        fields.append("AREA_GEO")
-    sql = "{} IS NOT NULL".format(idrv)
-    cursor = {x[0]: x[1:] for x in arcpy.da.SearchCursor(tb, fields, sql)}
-    return cursor
+    with arcpy.da.UpdateCursor(feature, campos) as cursor:
+        for x in cursor:
+            x[4] = clasif(x[0], min_ret0, max_ret0)
+            x[5] = clasif(x[1], min_ret1, max_ret1)
+            x[6] = clasif(x[2], min_ret2, max_ret2)
+            x[7] = clasif(x[3], min_ret3, max_ret3)
+            cursor.updateRow(x)
 
 def clasif(vx,v1,v2):
     """
@@ -290,7 +280,6 @@ def clasif(vx,v1,v2):
         m = "MEDIO"
     elif vx >= v2:
         m = "ALTO"
-
     return m
 
 def max_min_data(data):
@@ -301,202 +290,7 @@ def max_min_data(data):
         min_data = min([x for x in data if x >= 0])
     min_ret = (max_data - min_data) / 3 + min_data
     max_ret = (max_data - min_data) * 2 / 3 + min_data
-    print("max: {} - min: {}".format(max_data, min_data))
-    print("max_ret: {} - min_ret: {}".format(min_ret, max_ret))
     return min_ret, max_ret
-
-def jointables(feature, tb1_anp, tb2_tur, tb3_zdg, tb4_res, tb5_cagr, tb6_pol, tb7_eag, tb8_brs, tb9_bvu, tb10_cpp):
-
-    idrv = "ID_RV"
-    # Se crean campos y cursor para las tablas
-    # Areas naturales anp
-    fanp1 = "MAX_anp_nomb"
-    fanp2 = "MAX_anp_cate"
-    c_anp = dictb(feature, tb1_anp,'', fanp1, fanp2)
-    print(c_anp)
-    print("c_anp")
-
-    # Recursos turisticos turis
-    ftur = "SUM_P_RECTURIS"
-    c_tur = dictb(feature, tb2_tur, 'si', ftur)
-    print("c_tur")
-
-    # Zona degradad
-    fzdg = "PNT_ZDEGRA_SINCAGRO"
-    c_zdg = dictb(feature, tb3_zdg, 'si', fzdg)
-    print("c_zdg")
-
-    # Restauracion ROAM
-    fres = "PNTROAM"
-    c_res = dictb(feature, tb4_res, 'si', fres)
-    print("c_res")
-
-    # Cobertura agricola
-    fcagr = "SUM_P_CAGRI"
-    c_cagr = dictb(feature, tb5_cagr, 'si', fcagr)
-    print("c_cagr")
-
-    # Polos
-    fpol = "SUM_PNTPOLOS"
-    c_pol = dictb(feature, tb6_pol, 'si', fpol)
-    print("c_pol")
-
-    # Estadistica Agraria
-    feag = "PNTESTAGRI"
-    c_eag = dictb(feature, tb7_eag, 'si', feag)
-    print("c_eag")
-
-    # Brechas Sociales
-    fbrs = "PNTBRECHAS"
-    c_brs = dictb(feature, tb8_brs, 'si', fbrs)
-    print("c_brs")
-
-    # Bosques vulnerables
-    fbvu = "PNTBV"
-    c_bvu = dictb(feature, tb9_bvu, 'si', fbvu)
-    print("c_bvu")
-
-    # Habitantes por centro poblado
-    fcpp = "SUM_REPREPOBLA"
-    c_cpp = dictb(feature, tb10_cpp, '', fcpp)
-    print("c_cpp")
-
-    upd_fields = [idrv, fanp1, fanp2, ftur, fzdg, fres, fcagr, fpol, feag, fbrs, fbvu, fcpp]
-    ##############  0 ,   1  ,  2   ,   3 ,  4  ,  5  ,   6  ,  7  ,  8  ,  9  ,  10 ,  11 #########
-
-    ##### Agregamos campos de área ########
-
-    area_fields=[
-    ["AREA_TUR", "DOUBLE", "", "Area Recurso Turistico ha"],          #12
-    ["AREA_ZDEGR", "DOUBLE", "", "Area Zonas Degradadas ha"],         #13
-    ["AREA_ROAM", "DOUBLE", "", "Area Restauracion ha"],              #14
-    ["AREA_CAGRI", "DOUBLE", "", "Area Cobertura agricola ha"],       #15
-    ["AREA_POLOS", "DOUBLE", "", "Area Polos de intensificacion ha"], #16
-    ["AREA_EAG", "DOUBLE", "", "Area Estadistica Agraria ha"],        #17
-    ["AREA_BRS", "DOUBLE", "", "Area Brechas Sociales ha"],           #18
-    ["AREA_BV", "DOUBLE", "", "Area Bosque Vulnerable ha"],           #19
-        ]
-
-    upd_area = []
-    upd_area.extend(upd_fields)
-
-    for x in area_fields:
-        upd_area.append(x[0])
-        arcpy.AddField_management(feature,x[0], x[1], "", "", x[2], x[3])
-
-    sql = "{} IS NOT NULL".format(idrv)
-
-    with arcpy.da.UpdateCursor(feature, upd_area, sql) as cursor:
-
-        for row in cursor:
-            row[1] = c_anp.get(row[0])[0] if c_anp.get(row[0]) else "0"
-            row[2] = c_anp.get(row[0])[1] if c_anp.get(row[0]) else "0"
-            row[3] = c_tur.get(row[0])[0] if c_tur.get(row[0]) else 0
-            row[4] = c_zdg.get(row[0])[0] if c_zdg.get(row[0]) else 0
-            row[5] = c_res.get(row[0])[0] if c_res.get(row[0]) else 0
-            row[6] = c_cagr.get(row[0])[0] if c_cagr.get(row[0]) else 0
-            row[7] = c_pol.get(row[0])[0] if c_pol.get(row[0]) else 0
-            row[8] = c_eag.get(row[0])[0] if c_eag.get(row[0]) else 0
-            row[9] = c_brs.get(row[0])[0] if c_brs.get(row[0]) else 0
-            row[10] = c_bvu.get(row[0])[0] if c_bvu.get(row[0]) else 0
-            row[11] = c_cpp.get(row[0])[0] if c_cpp.get(row[0]) else 0
-
-            #ahora los campos de area
-            row[12] = c_tur.get(row[0])[-1] if c_tur.get(row[0]) else 0
-            row[13] = c_zdg.get(row[0])[-1] if c_zdg.get(row[0]) else 0
-            row[14] = c_res.get(row[0])[-1] if c_res.get(row[0]) else 0
-            row[15] = c_cagr.get(row[0])[-1] if c_cagr.get(row[0]) else 0
-            row[16] = c_pol.get(row[0])[-1] if c_pol.get(row[0]) else 0
-            row[17] = c_eag.get(row[0])[-1] if c_eag.get(row[0]) else 0
-            row[18] = c_brs.get(row[0])[-1] if c_brs.get(row[0]) else 0
-            row[19] = c_bvu.get(row[0])[-1] if c_bvu.get(row[0]) else 0
-            cursor.updateRow(row)
-    del cursor
-
-    print("UPDATE 1 finish")
-
-    list_fields=[
-    ["LENGTH_GEO", "DOUBLE", "", "LENGTH_GEO"],                     #12
-    ["EVALUACION", "DOUBLE", "", "Evaluacion Final"],                #13
-    ["EVACLASE", "TEXT", 10, "Clasificacion Evaluacion Final"],     #14
-    ["AMBIENTAL", "DOUBLE", "", "Ambiental"],                       #15
-    ["AMBCLASE", "TEXT", 10, "Evaluacion Ambiental Clasificacion"], #16
-    ["ECONOMICO", "DOUBLE", "", "Economico"],                       #17
-    ["ECOCLASE", "TEXT", 10, "Evaluacion Economica Clasificacion"], #18
-    ["SOCIAL", "DOUBLE", "", "Social"],                             #19
-    ["SOCCLASE", "TEXT", 10, "Evaluacion Social Clasificacion"]     #20
-        ]
-    fields_eval = [x[0] for x in list_fields]
-
-    # Creamos los campos adicionales de análisis
-    for val in list_fields:
-        arcpy.AddField_management(feature, val[0], val[1], "", "", val[2], val[3])
-
-    # Definimos la lista de campos para el proceso final de evaluacion
-    eval_upd = []
-    eval_upd.extend(upd_fields)
-    eval_upd.extend(fields_eval)
-    eval_upd.append("SHAPE@")
-
-    print("Fields agregados")
-
-    list_val_eval = []
-    list_val_ambi = []
-    list_val_econ = []
-    list_val_soci = []
-
-    with arcpy.da.SearchCursor(feature, eval_upd, sql) as cursor:
-        for i in cursor:
-            val_eval = i[3] + i[4] + i[5] + i[6] + i[7] + i[8] + i[9] - i[10] + i[11]
-            list_val_eval.append(val_eval)
-
-            val_ambi = i[5] - i[10] + i[4]
-            list_val_ambi.append(val_ambi)
-
-            val_econ = i[3] + i[6] + i[7] + i[8]
-            list_val_econ.append(val_econ)
-
-            val_soci = i[9] + i[11]
-            list_val_soci.append(val_soci)
-
-    del cursor
-
-    bp_eval_min, bp_eval_max = max_min_data(list_val_eval)
-    bp_ambi_min, bp_ambi_max = max_min_data(list_val_ambi)
-    bp_econ_min, bp_econ_max = max_min_data(list_val_econ)
-    bp_soci_min, bp_soci_max = max_min_data(list_val_soci)
-
-    # Comenzamos con el actualizado final de campos
-    with arcpy.da.UpdateCursor(feature, eval_upd, sql) as cursorU:
-
-        for i in cursorU:
-            val_eval = i[3] + i[4] + i[5] + i[6] + i[7] + i[8] + i[9] - i[10] + i[11]
-            cls_eval = clasif(val_eval, bp_eval_min, bp_eval_max)
-
-            val_ambi = i[5] - i[10] + i[4]
-            cls_ambi = clasif(val_ambi, bp_ambi_min, bp_ambi_max)
-
-            val_econ = i[3] + i[6] + i[7] + i[8]
-            cls_econ = clasif(val_econ, bp_econ_min, bp_econ_max)
-
-            val_soci = i[9] + i[11]
-            cls_soci = clasif(val_soci, bp_soci_min, bp_soci_max)
-
-            # campo area
-            i[12] = i[21].getLength("GEODESIC", "KILOMETERS")
-            i[13] = val_eval
-            i[14] = cls_eval
-            i[15] = val_ambi
-            i[16] = cls_ambi
-            i[17] = val_econ
-            i[18] = cls_econ
-            i[19] = val_soci
-            i[20] = cls_soci
-            cursorU.updateRow(i)
-    del cursorU
-    arcpy.CopyFeatures_management(feature, os.path.join(PATH_GDB, "RVV_EVALUACION_{}".format(REGION[1])))
-    print("UPDATE 2 finish")
-
 
 def process():
     region = nom_reg
@@ -515,12 +309,12 @@ def process():
                                              os.path.join(GDB_PROCESS, "area_DISSOL"),
                                              os.path.join(GDB_PROCESS, "area_BUFFER"), tipo_eval)
 
-    # GDB_PROCESS = r"C:/mda_tmp/PROCESS_19092020_135735/UCAYALI.gdb"
+    # GDB_PROCESS = r"C:/mda_tmp/PROCESS_19092020_182224/UCAYALI.gdb"
     # area_eval = os.path.join(GDB_PROCESS, "area_EVALUAR")
     # dissol = os.path.join(GDB_PROCESS, "area_DISSOL")
     # buffer = os.path.join(GDB_PROCESS, "area_BUFFER")
     # VARIABLES
-    tb_anp = p01_anp(region, buffer, area_eval, os.path.join(GDB_PROCESS, "tb_{}".format(gpo_anp().name)))
+    # tb_anp = p01_anp(region, buffer, area_eval, os.path.join(GDB_PROCESS, "tb_{}".format(gpo_anp().name)))
     print("tb_anp")
     tb_brturis = p02_brturis(region, buffer, area_eval, os.path.join(GDB_PROCESS, "tb_{}".format(gpo_brturis().name)))
     print("tb_brturis")
@@ -541,10 +335,11 @@ def process():
     agregar_campos(area_eval, ["PECONOMICO", "DOUBLE"], ["PSOCIAL", "DOUBLE"], ["PPREAMBIENTAL", "DOUBLE"],
                    ["PTOTAL", "DOUBLE"], ["CECONOMICO", "TEXT"], ["CSOCIAL", "TEXT"], ["CAMBIENTAL", "TEXT"],
                    ["CTOTAL", "TEXT"], ["PAMBIENTAL", "DOUBLE"], ["PPRETOTAL", "DOUBLE"])
-    actualizar_valor(area_eval, "P_CAGRI", "PZDEGRA", "P_RDEF", "P_RTURIS", "P_ROAM", "P_POLOS",
-                     "MEDIAN_PSOCIAL", "MEDIAN_PVBPA", "SUM_POBCCPP", "PECONOMICO", "PPREAMBIENTAL",
-                     "PSOCIAL", "PAMBIENTAL", "PPRETOTAL", "PTOTAL")
+    actualizar_valor(area_eval, "P_CAGRI", "P_ZDEGRA", "P_RDEF", "P_RTURIS", "P_ROAM", "P_POLOS",
+                     "MEAN_PSOCIAL", "MEAN_PVBPA", "SUM_POBCCPP", "PECONOMICO", "PPREAMBIENTAL",
+                     "PSOCIAL", "PAMBIENTAL", "PPRETOTAL", "PTOTAL") # "MEDIAN_PSOCIAL", "MEDIAN_PVBPA", "SUM_POBCCPP", "PECONOMICO", "PPREAMBIENTAL",
     actualizar_valor2(area_eval, "PAMBIENTAL", "PTOTAL")
+    actualizar_valor3(area_eval, "PAMBIENTAL", "PECONOMICO", "PSOCIAL", "PTOTAL", "CAMBIENTAL", "CECONOMICO", "CSOCIAL", "CTOTAL")
 
 def main():
     process()
